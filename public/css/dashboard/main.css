@@ -1,4 +1,4 @@
-body {
+.container-dashboard {
     background-color: #f7f9fc;
     font-family: 'Roboto', sans-serif;
     margin: 0;
@@ -7,6 +7,8 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
 }
+
+/* Sidebar */
 .sidebar {
     background: linear-gradient(180deg, #1a2e4a, #2b4a7a);
     color: #f7f9fc;
@@ -16,12 +18,11 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.sidebar h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    text-align: center;
-    margin: 1rem 0;
-    color: #f7f9fc;
+.sidebar .logo {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 .sidebar a {
     color: #f7f9fc;
@@ -32,9 +33,12 @@ body {
     transition: background 0.2s ease, transform 0.2s ease;
 }
 .sidebar a:hover {
-    background-color: #00c4b4;
+    background-color: #00C4B4;
     color: #1a2e4a;
     transform: translateX(5px);
+}
+.sidebar .active{
+    background-color: #d4a017;
 }
 .sidebar-toggle {
     background: none;
@@ -46,13 +50,15 @@ body {
     transition: color 0.2s ease;
 }
 .sidebar-toggle:hover {
-    color: #00c4b4;
+    color: #00C4B4;
 }
 .content {
     padding: 15px;
     flex-grow: 1;
     transition: margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Header */
 header {
     background: linear-gradient(135deg, #1a2e4a, #2b4a7a);
     color: #f7f9fc;
@@ -70,6 +76,8 @@ header h1 {
     font-size: 1.5rem;
     margin: 0;
 }
+
+/* Card */
 .card {
     border: none;
     border-radius: 10px;
@@ -78,22 +86,24 @@ header h1 {
     margin-bottom: 1.5rem;
 }
 .card-header {
-    background: linear-gradient(45deg, #00c4b4, #26d0c0);
+    background: linear-gradient(45deg, #00C4B4, #26d0c0);
     color: #1a2e4a;
     font-family: 'Playfair Display', serif;
     font-size: 1.25rem;
     border-radius: 10px 10px 0 0;
     padding: 0.75rem 1.25rem;
 }
+
+/* Button */
 .btn-primary {
-    background: linear-gradient(45deg, #00c4b4, #26d0c0);
+    background: linear-gradient(45deg, #00C4B4, #26d0c0);
     border: none;
     color: #1a2e4a;
     font-weight: 500;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 .btn-primary:hover {
-    background: linear-gradient(45deg, #26d0c0, #00c4b4);
+    background: linear-gradient(45deg, #26d0c0, #00C4B4);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 196, 180, 0.4);
 }
@@ -107,6 +117,43 @@ header h1 {
     background-color: #d4a017;
     color: #1a2e4a;
 }
+.btn-primary-form {
+    background: linear-gradient(135deg, #1a2e4a, #2b4a7a);
+    color: #f7f9fc;
+    border: none;
+    font-weight: 500;
+    width: 100%;
+    padding: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary-form:hover {
+    background: linear-gradient(45deg, #3b5b8f, #243f65);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(36, 63, 101, 0.4);
+}
+.btn-google {
+    background: #fff;
+    border: 1px solid #6b7280;
+    color: #6b7280;
+    font-weight: 500;
+    width: 100%;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-google:hover {
+    background: #f7f9fc;
+    color: #243f65;
+    border-color: #243f65;
+}
+.btn-google i {
+    margin-right: 8px;
+}
+
+/* Table */
 .table th {
     background-color: #1a2e4a;
     color: #f7f9fc;
@@ -116,6 +163,89 @@ header h1 {
     color: #6b7280;
     font-size: 0.85rem;
 }
+
+/* Register form */
+.container-form{
+    background-color: #f7f9fc;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.register-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.8s ease-out;
+    background: #fff;
+    max-width: 400px;
+    width: 100%;
+    margin: 20px;
+}
+.register-card .card-header {
+    background: linear-gradient(135deg, #1a2e4a, #2b4a7a);
+    color: #f7f9fc;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    text-align: center;
+    border-radius: 10px 10px 0 0;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.register-card .card-header i {
+    margin-right: 8px;
+}
+.register-card .card-body {
+    padding: 1.5rem;
+}
+.form-label {
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.form-control {
+    border-color: #6b7280;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+.form-control:focus {
+    border-color: #1A2E4A;
+    box-shadow: 0 0 8px rgba(0, 196, 180, 0.3);
+}
+.password-field {
+    position: relative;
+}
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 65%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 5px;
+}
+.password-toggle:hover {
+    color: #1A2E4A;
+}
+.text-link {
+    color: #1A2E4A;
+    text-decoration: none;
+    font-weight: 500;
+}
+.text-link:hover {
+    color: #243f65;
+    text-decoration: underline;
+}
+
+/* Footer */
 footer {
     background: linear-gradient(135deg, #e2e8f0, #f7f9fc);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
@@ -131,6 +261,9 @@ footer p {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Responsive */
+
 /* Desktop: Sidebar bên trái */
 @media (min-width: 769px) {
     .sidebar {
@@ -186,5 +319,28 @@ footer p {
     .sidebar h2 {
         font-size: 1.3rem;
         margin: 0.5rem 0;
+    }
+    .register-card {
+        margin: 15px;
+    }
+    .register-card .card-header {
+        font-size: 1.3rem;
+    }
+    .register-card .card-body {
+        padding: 1.25rem;
+    }
+    .form-control {
+        font-size: 0.9rem;
+    }
+    .form-label {
+        font-size: 0.9rem;
+    }
+    .btn-primary-form, .btn-google {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+    .password-toggle {
+        top: 70%;
+        font-size: 0.9rem;
     }
 }

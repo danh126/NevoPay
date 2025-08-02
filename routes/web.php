@@ -8,5 +8,13 @@ Route::get('/', function () {
 
 // Test layout
 Route::get('/test', function () {
-    return view('home.index');
+    return view('client.home.index');
+});
+
+Route::get('/login', function () {
+    return view('auth.login');
+});
+
+Route::get('/register', function () {
+    return view('auth.register');
 });
