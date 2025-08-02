@@ -1,18 +1,15 @@
-body {
+.welcome {
     background-color: #f7f9fc;
     font-family: 'Roboto', sans-serif;
     margin: 0;
 }
-header {
+.welcome header {
     background: linear-gradient(135deg, #1a2e4a, #2b4a7a);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.75rem;
-    letter-spacing: 1px;
-    color: #f7f9fc;
-}
+
+/* Hero Section */
+
 .hero-section {
     background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"%3E%3Cpath fill="%23e6f0fa" fill-opacity="0.5" d="M0,160L48,170.7C96,181,192,203,288,192C384,181,480,139,576,138.7C672,139,768,181,864,186.7C960,192,1056,160,1152,149.3C1248,139,1344,149,1392,154.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"%3E%3C/path%3E%3C/svg%3E') no-repeat bottom;
     background-size: cover;
@@ -34,6 +31,9 @@ header h1 {
     margin: 0 auto 2rem;
     animation: fadeIn 1.5s ease-in;
 }
+
+/* Button */
+
 .btn-primary {
     background: linear-gradient(45deg, #00c4b4, #26d0c0);
     border: none;
@@ -58,6 +58,9 @@ header h1 {
     background-color: #d4a017;
     color: #1a2e4a;
 }
+
+/* Footer */
+
 footer {
     background: linear-gradient(135deg, #e2e8f0, #f7f9fc);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
@@ -66,15 +69,167 @@ footer p {
     color: #6b7280;
     font-size: 0.875rem;
 }
+.app-footer {
+    background: linear-gradient(135deg, #e2e8f0, #f7f9fc);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    padding: 10px 0;
+    margin-top: auto;
+}
+.footer-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin: 0;
+    text-align: center;
+}
+
+/* Page Home */
+
+.app-body {
+    background-color: #f7f9fc;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.app-header {
+    background: linear-gradient(135deg, #243f65, #3b5b8f);
+    color: #f7f9fc;
+    padding: 10px 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+.logout-btn {
+    margin-left: auto;
+    border-color: #6b7280;
+    color: #6b7280;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+.logout-btn:hover {
+    background-color: #243f65;
+    color: #f7f9fc;
+}
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    animation: fadeIn 0.8s ease-out;
+}
+.welcome-text {
+    color: #243f65;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.balance-card {
+    background: #f7f9fc;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.balance-amount {
+    color: #243f65;
+    font-size: 2rem;
+    margin: 0;
+}
+.balance-label {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0.5rem 0 1rem;
+}
+.app-body .btn-primary {
+    background: linear-gradient(45deg, #243f65, #3b5b8f);
+    border: none;
+    color: #f7f9fc;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.app-body .btn-primary:hover {
+    background: linear-gradient(45deg, #3b5b8f, #243f65);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(36, 63, 101, 0.4);
+}
+.app-body .btn-outline-primary {
+    border-color: #6b7280;
+    color: #6b7280;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: background-color 0.2s, color 0.2s;
+}
+.app-body .btn-outline-primary:hover {
+    background-color: #243f65;
+    color: #f7f9fc;
+}
+.table .table-header {
+    background: #243f65;
+    color: #f7f9fc;
+    font-size: 1rem;
+}
+.table .table-cell {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+.text-link {
+    color: #00c4b4;
+    text-decoration: none;
+    font-weight: 500;
+    margin: 0 10px;
+}
+.text-link:hover {
+    color: #d4a017;
+    text-decoration: underline;
+}
+
+/* Responsive */
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
 @media (max-width: 768px) {
     .hero-section h2 {
         font-size: 2.5rem;
     }
     .hero-section p {
         font-size: 1rem;
+    }
+    .main-content {
+        padding: 15px;
+    }
+    .welcome-text {
+        font-size: 1.2rem;
+    }
+    .balance-card {
+        padding: 1rem;
+    }
+    .balance-amount {
+        font-size: 1.5rem;
+    }
+    .balance-label {
+        font-size: 0.9rem;
+    }
+    .app-body .btn-primary, .app-body .btn-outline-primary {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+    }
+    .table .table-header, .table .table-cell {
+        font-size: 0.8rem;
+    }
+    .text-link {
+        font-size: 0.85rem;
+        margin: 0 5px;
+    }
+    .footer-text {
+        font-size: 0.8rem;
     }
 }
