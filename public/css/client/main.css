@@ -104,16 +104,70 @@ footer p {
     top: 0;
     z-index: 999;
 }
-.logout-btn {
-    margin-left: auto;
-    border-color: #6b7280;
-    color: #6b7280;
-    font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-}
-.logout-btn:hover {
-    background-color: #243f65;
+.menu-btn {
+    background: none;
+    border: none;
     color: #f7f9fc;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+.header-nav {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-left: auto;
+}
+.header-nav .nav-link {
+    color: #f7f9fc;
+    font-weight: 500;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+.header-nav .nav-link i {
+    margin-right: 8px;
+}
+.header-nav .nav-link:hover {
+    color: #00c4b4;
+}
+.header-nav .nav-link.active {
+    color: #00c4b4;
+    font-weight: 700;
+}
+.app-sidebar {
+    width: 250px;
+    background: #f7f9fc;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    padding: 70px 0 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 998;
+}
+.app-sidebar.active {
+    transform: translateX(0);
+}
+.app-sidebar .nav-link {
+    color: #243f65;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+.app-sidebar .nav-link i {
+    margin-right: 8px;
+}
+.app-sidebar .nav-link:hover {
+    color: #00c4b4;
+}
+.app-sidebar .nav-link.active {
+    color: #00c4b4;
+    font-weight: 700;
 }
 .main-content {
     flex-grow: 1;
@@ -127,11 +181,10 @@ footer p {
     margin-bottom: 1.5rem;
     text-align: center;
 }
-.balance-card {
+.balance-card, .transfer-card {
     background: #f7f9fc;
     border-radius: 8px;
     padding: 1.5rem;
-    text-align: center;
     margin-bottom: 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -139,11 +192,25 @@ footer p {
     color: #243f65;
     font-size: 2rem;
     margin: 0;
+    text-align: center;
 }
 .balance-label {
     color: #6b7280;
     font-size: 1rem;
     margin: 0.5rem 0 1rem;
+    text-align: center;
+}
+.transfer-title {
+    color: #243f65;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
 }
 .app-body .btn-primary {
     background: linear-gradient(45deg, #243f65, #3b5b8f);
@@ -169,6 +236,25 @@ footer p {
     background-color: #243f65;
     color: #f7f9fc;
 }
+
+/* Form */
+
+.form-label {
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.form-control, .form-select {
+    border-color: #6b7280;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #243f65;
+    box-shadow: 0 0 8px rgba(36, 63, 101, 0.3);
+}
+
+/* Table */
+
 .table .table-header {
     background: #243f65;
     color: #f7f9fc;
@@ -178,15 +264,119 @@ footer p {
     color: #6b7280;
     font-size: 0.9rem;
 }
+.table .table-cell .status-success {
+    color: #00c4b4;
+}
+.table .table-cell .status-failed {
+    color: #dc3545;
+}
+
+/* Text */
+
 .text-link {
     color: #00c4b4;
     text-decoration: none;
     font-weight: 500;
     margin: 0 10px;
+    display: inline-flex;
+    align-items: center;
+}
+.text-link i {
+    margin-right: 8px;
 }
 .text-link:hover {
     color: #d4a017;
     text-decoration: underline;
+}
+
+/* Page Profile */
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    color: #243f65;
+}
+.profile-name {
+    color: #243f65;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0;
+}
+.profile-email {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0.5rem 0 0;
+}
+.profile-card, .edit-profile-form {
+    background: #f7f9fc;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.profile-card h3 {
+    color: #243f65;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+.profile-info {
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+.profile-info i {
+    margin-right: 8px;
+    color: #243f65;
+}
+
+/* Page Transaction */
+
+.transaction-title {
+    color: #243f65;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.filter-form {
+    background: #f7f9fc;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.pagination-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+.pagination-btn {
+    background: #f7f9fc;
+    border: 1px solid #6b7280;
+    color: #243f65;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.pagination-btn i {
+    margin-right: 8px;
+}
+.pagination-btn:hover {
+    background: #243f65;
+    color: #f7f9fc;
 }
 
 /* Responsive */
@@ -203,19 +393,32 @@ footer p {
     .hero-section p {
         font-size: 1rem;
     }
+    .header-nav {
+        display: none;
+    }
+    .menu-btn {
+        display: block;
+        margin-left: auto;
+    }
     .main-content {
         padding: 15px;
     }
     .welcome-text {
         font-size: 1.2rem;
     }
-    .balance-card {
+    .balance-card, .transfer-card {
         padding: 1rem;
     }
     .balance-amount {
         font-size: 1.5rem;
     }
     .balance-label {
+        font-size: 0.9rem;
+    }
+    .transfer-title {
+        font-size: 1.1rem;
+    }
+    .form-label {
         font-size: 0.9rem;
     }
     .app-body .btn-primary, .app-body .btn-outline-primary {
@@ -231,5 +434,46 @@ footer p {
     }
     .footer-text {
         font-size: 0.8rem;
+    }
+    .profile-header {
+        margin-bottom: 1.5rem;
+    }
+    .profile-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    .profile-name {
+        font-size: 1.2rem;
+    }
+    .profile-email {
+        font-size: 0.9rem;
+    }
+    .profile-card, .edit-profile-form {
+        padding: 1rem;
+    }
+    .profile-card h3 {
+        font-size: 1.1rem;
+    }
+    .profile-info {
+        font-size: 0.9rem;
+    }
+    .transaction-title {
+        font-size: 1.2rem;
+    }
+    .filter-form {
+        padding: 1rem;
+    }
+    .pagination-btn {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+}
+
+@media (min-width: 769px) {
+    .menu-btn {
+        display: none;
+    }
+    .app-sidebar {
+        display: none;
     }
 }
