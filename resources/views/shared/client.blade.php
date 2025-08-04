@@ -25,8 +25,20 @@
         <header class="app-header">
             <!-- Logo NevoPay -->
             <a href="/" class="text-decoration-none"><img src="{{asset('images/logo/nevopay-v2.png')}}" alt="NevoPay" srcset="" width="90"></a>
-            <a href="#" class="btn btn-outline-primary logout-btn">Đăng Xuất</a>
+            <button class="menu-btn d-md-none"><i class="fas fa-bars"></i></button>
+            <nav class="header-nav d-none d-md-flex">
+                <a href="#" class="nav-link active"><i class="fas fa-user"></i> Hồ sơ</a>
+                <a href="#" class="nav-link"><i class="fas fa-history"></i> Giao dịch</a>
+                <a href="#" class="nav-link logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng Xuất</a>
+            </nav>
         </header>
+
+        <!-- Sidebar cho mobile -->
+        <nav class="app-sidebar">
+            <a href="#" class="nav-link active"><i class="fas fa-user"></i> Hồ sơ</a>
+            <a href="#" class="nav-link"><i class="fas fa-history"></i> Giao dịch</a>
+            <a href="#" class="nav-link"><i class="fas fa-sign-out-alt"></i> Đăng Xuất</a>
+        </nav>
 
         <!-- Nội dung chính -->
         <div class="main-content container-fluid">
@@ -42,5 +54,13 @@
 
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+         <script>
+            // Toggle sidebar trên mobile
+            function toggleSidebar() {
+                document.querySelector('.app-sidebar').classList.toggle('active');
+            }
+            document.querySelector('.menu-btn').addEventListener('click', toggleSidebar);
+        </script>
     </body>
 </html>

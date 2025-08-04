@@ -28,11 +28,10 @@
                 <div class="logo">
                     <img src="{{asset('images/logo/nevopay-v2.png')}}" alt="NevoPay" srcset="" width="150px">
                 </div>
-                <a href="#" class="active">Tổng quan</a>
-                <a href="#">Giao Dịch</a>
-                <a href="#">Chuyển Tiền</a>
-                <a href="#">Hồ Sơ</a>
-                <a href="#">Đăng Xuất</a>
+                <a href="#" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Tổng quan</a>
+                <a href="#" class="nav-link"><i class="fas fa-users"></i> Người dùng</a>
+                <a href="#" class="nav-link"><i class="fas fa-history"></i> Giao dịch</a>
+                <a href="#" class="nav-link"><i class="fas fa-cog"></i> Cài đặt</a>
             </div>
 
             <!-- Nội dung chính -->
@@ -40,7 +39,6 @@
                 <!-- Thanh đầu trang -->
                 <header>
                     <button class="sidebar-toggle" id="toggleSidebar"><i class="fas fa-times"></i></button>
-                    <h1>NevoPay - New Evolution of Payment</h1>
                     <div class="dropdown">
                         <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             Tên Người Dùng

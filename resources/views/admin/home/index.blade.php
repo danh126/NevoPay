@@ -1,79 +1,147 @@
 @extends('shared.dashboard')
 @section('title','Tổng quan | NevoPay')
 @section('content')
-    <div class="row g-3">
-        <!-- Thẻ Chào Mừng -->
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">Chào Mừng, Tên Người Dùng!</div>
-                <div class="card-body">
-                    <p class="card-text">Quản lý ví điện tử của bạn một cách dễ dàng và an toàn.</p>
-                </div>
+    <h2 class="dashboard-title">Tổng Quan Admin</h2>
+    <div class="row">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card">
+                <i class="fas fa-users"></i>
+                <h3>Tổng số người dùng</h3>
+                <p>1,234</p>
             </div>
         </div>
-
-        <!-- Tổng Quan Số Dư -->
-        <div class="col-md-6 col-12">
-            <div class="card">
-                <div class="card-header">Tổng Quan Số Dư</div>
-                <div class="card-body">
-                    <h3 class="card-title">1.234.560 VNĐ</h3>
-                    <p class="card-text">Số Dư Hiện Có</p>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card">
+                <i class="fas fa-exchange-alt"></i>
+                <h3>Tổng giao dịch</h3>
+                <p>5,678</p>
             </div>
         </div>
-
-        <!-- Chuyển Tiền Nhanh -->
-        <div class="col-md-6 col-12">
-            <div class="card">
-                <div class="card-header">Chuyển Tiền Nhanh</div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="recipient" class="form-label">Người Nhận</label>
-                        <input type="text" class="form-control" id="recipient" placeholder="Nhập tên người nhận">
-                    </div>
-                    <div class="mb-3">
-                        <label for="amount" class="form-label">Số Tiền</label>
-                        <input type="number" class="form-control" id="amount" placeholder="Nhập số tiền">
-                    </div>
-                    <button class="btn btn-primary">Chuyển Tiền</button>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card">
+                <i class="fas fa-money-bill-wave"></i>
+                <h3>Doanh thu phí</h3>
+                <p>12,345,678 VNĐ</p>
             </div>
         </div>
-
-        <!-- Giao Dịch Gần Đây -->
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">Giao Dịch Gần Đây</div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Ngày</th>
-                                    <th>Loại</th>
-                                    <th>Số Tiền</th>
-                                    <th>Người Nhận/Người Gửi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>01-08-2025</td>
-                                    <td>Chuyển Tiền</td>
-                                    <td>-1.200.000 VNĐ</td>
-                                    <td>Nguyễn Văn A</td>
-                                </tr>
-                                <tr>
-                                    <td>30-07-2025</td>
-                                    <td>Nạp Tiền</td>
-                                    <td>+5.000.000 VNĐ</td>
-                                    <td>Ngân Hàng</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card">
+                <i class="fas fa-wallet"></i>
+                <h3>Số dư hệ thống</h3>
+                <p>123,456,789 VNĐ</p>
             </div>
         </div>
+    </div>
+    <h3 class="mt-4" style="color: #243f65;">Người Dùng Gần Đây</h3>
+    <div class="table-responsive">
+        <table class="table table-hover user-table">
+            <thead>
+                <tr>
+                    <th class="table-header">Tên</th>
+                    <th class="table-header">Email</th>
+                    <th class="table-header">Ngày đăng ký</th>
+                    <th class="table-header">Số dư</th>
+                    <th class="table-header">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="table-cell">Nguyễn Văn A</td>
+                    <td class="table-cell">nguyenvana@example.com</td>
+                    <td class="table-cell">01-08-2025</td>
+                    <td class="table-cell">1,234,560 VNĐ</td>
+                    <td class="table-cell">
+                        <a href="#" class="btn btn-primary"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-cell">Trần Thị B</td>
+                    <td class="table-cell">tranthib@example.com</td>
+                    <td class="table-cell">31-07-2025</td>
+                    <td class="table-cell">2,345,678 VNĐ</td>
+                    <td class="table-cell">
+                        <a href="#" class="btn btn-primary"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-cell">Lê Văn C</td>
+                    <td class="table-cell">levanc@example.com</td>
+                    <td class="table-cell">30-07-2025</td>
+                    <td class="table-cell">500,000 VNĐ</td>
+                    <td class="table-cell">
+                        <a href="#" class="btn btn-primary"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-cell">Phạm Thị D</td>
+                    <td class="table-cell">phamthid@example.com</td>
+                    <td class="table-cell">29-07-2025</td>
+                    <td class="table-cell">3,456,789 VNĐ</td>
+                    <td class="table-cell">
+                        <a href="#" class="btn btn-primary"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-cell">Hoàng Văn E</td>
+                    <td class="table-cell">hoangvane@example.com</td>
+                    <td class="table-cell">28-07-2025</td>
+                    <td class="table-cell">1,000,000 VNĐ</td>
+                    <td class="table-cell">
+                        <a href="#" class="btn btn-primary"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <h3 class="mt-4" style="color: #243f65;">Giao Dịch Gần Đây</h3>
+    <div class="table-responsive">
+        <table class="table table-hover transaction-table">
+            <thead>
+                <tr>
+                    <th class="table-header">Mã GD</th>
+                    <th class="table-header">Người gửi</th>
+                    <th class="table-header">Người nhận</th>
+                    <th class="table-header">Số tiền</th>
+                    <th class="table-header">Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="table-cell">TX123456</td>
+                    <td class="table-cell">Nguyễn Văn A</td>
+                    <td class="table-cell">Trần Thị B</td>
+                    <td class="table-cell">-1,200,000 VNĐ</td>
+                    <td class="table-cell"><i class="fas fa-check-circle status-success"></i> Thành công</td>
+                </tr>
+                <tr>
+                    <td class="table-cell">TX123457</td>
+                    <td class="table-cell">Trần Thị B</td>
+                    <td class="table-cell">Nạp từ thẻ</td>
+                    <td class="table-cell">+5,000,000 VNĐ</td>
+                    <td class="table-cell"><i class="fas fa-check-circle status-success"></i> Thành công</td>
+                </tr>
+                <tr>
+                    <td class="table-cell">TX123458</td>
+                    <td class="table-cell">Nguyễn Văn A</td>
+                    <td class="table-cell">Trần Thị C</td>
+                    <td class="table-cell">-500,000 VNĐ</td>
+                    <td class="table-cell"><i class="fas fa-times-circle status-failed"></i> Thất bại</td>
+                </tr>
+                <tr>
+                    <td class="table-cell">TX123459</td>
+                    <td class="table-cell">Lê Văn C</td>
+                    <td class="table-cell">Nạp từ thẻ</td>
+                    <td class="table-cell">+2,000,000 VNĐ</td>
+                    <td class="table-cell"><i class="fas fa-check-circle status-success"></i> Thành công</td>
+                </tr>
+                <tr>
+                    <td class="table-cell">TX123460</td>
+                    <td class="table-cell">Phạm Thị D</td>
+                    <td class="table-cell">Hoàng Văn E</td>
+                    <td class="table-cell">-800,000 VNĐ</td>
+                    <td class="table-cell"><i class="fas fa-check-circle status-success"></i> Thành công</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 @endsection
