@@ -8,7 +8,7 @@ Route::get('/', function () {
 
 // Test layout
 Route::get('/test', function () {
-    return view('admin.user.index');
+    return view('admin.home.index');
 });
 
 Route::get('/login', function () {
