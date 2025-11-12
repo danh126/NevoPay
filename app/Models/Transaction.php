@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Transaction extends Model
 {
@@ -26,6 +27,23 @@ class Transaction extends Model
         'amount' => 'decimal:2',
         'completed_at' => 'datetime',
     ];
+
+    
+    // Model event: tự sinh UUID khi tạo
+    protected static function booted()
+    {
+        static::creating(function ($transaction) {
+            if (!$transaction->transaction_code) {
+                $transaction->transaction_code = (string) Str::uuid();
+            }
+        });
+    }
+
+    // Scope: lọc transaction completed
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'completed');
+    }
 
     // Relationships
     public function wallet()
