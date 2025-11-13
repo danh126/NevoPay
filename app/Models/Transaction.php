@@ -28,7 +28,6 @@ class Transaction extends Model
         'completed_at' => 'datetime',
     ];
 
-    
     // Model event: tự sinh UUID khi tạo
     protected static function booted()
     {
