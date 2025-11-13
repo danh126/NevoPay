@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\Unit\Models;
+namespace Tests\Unit\Models;
 
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
