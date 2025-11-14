@@ -6,6 +6,7 @@ use App\Models\Wallet;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class WalletRepository implements WalletRepositoryInterface
@@ -31,7 +32,23 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function findByWalletNumber(string $wallet_number): ?Wallet
     {
-        return Wallet::where('wallet_number', $wallet_number)->first();
+        return Wallet::where('wallet_number', $wallet_number)->firstOrFail();
+    }
+
+    /**
+     * Tìm ví theo ID user
+     */
+    public function findByUserId(int $user_id): ?Wallet
+    {
+        return Wallet::where('user_id', $user_id)->firstOrFail();
+    }
+
+    /**
+     * Lấy tất cả ví active.
+     */
+    public function getActiveWallets(): Collection
+    {
+        return Wallet::where('is_active', true)->get();
     }
 
     /**
@@ -51,7 +68,7 @@ class WalletRepository implements WalletRepositoryInterface
     }
 
     /**
-     * Cập nhật thông tin ví.
+     * Cập nhật ví theo ID.
      */
     public function update(int $id, array $data): ?Wallet
     {
@@ -62,7 +79,7 @@ class WalletRepository implements WalletRepositoryInterface
             }
 
             $wallet->update($data);
-            return $wallet;
+            return $wallet->fresh();
         } catch (\Exception $e) {
             Log::error('WalletRepository::update failed', [
                 'message' => $e->getMessage(),
@@ -74,7 +91,46 @@ class WalletRepository implements WalletRepositoryInterface
     }
 
     /**
-     * Xóa ví.
+     * Update balance với locking để tránh race condition.
+     */
+    public function updateBalance(int $id, float $amount): Wallet
+    {
+        return DB::transaction(function () use ($id, $amount) {
+            try {
+                $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
+                $wallet->increment('balance', $amount);
+                return $wallet->fresh();
+            } catch (\Exception $e) {
+                Log::error('WalletRepository::updateBalance failed', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'wallet_id' => $id,
+                    'amount' => $amount,
+                ]);
+                throw $e;
+            }
+        });
+    }
+    
+    /**
+     * Deduct balance với validation.
+     */
+    public function deductBalance(int $id, float $amount): Wallet
+    {
+        return DB::transaction(function () use ($id, $amount) {
+            $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
+            
+            if ($wallet->balance < $amount) {
+                throw new \Exception('Insufficient balance');
+            }
+            
+            $wallet->decrement('balance', $amount);
+            return $wallet->fresh();
+        });
+    }
+
+    /**
+     * Xóa ví theo ID.
      */
     public function delete(int $id): bool
     {
@@ -99,6 +155,14 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function isActive(int $id): bool
     {
-        return Wallet::where('id', $id)->where('is_active', true)->exits();
+        return Wallet::where('id', $id)->where('is_active', true)->exists();
+    }
+
+    /**
+     * Check balance đủ không.
+     */
+    public function hasSufficientBalance(int $id, float $amount): bool
+    {
+        return Wallet::where('id', $id)->where('balance', '>=', $amount)->exists();
     }
 }
