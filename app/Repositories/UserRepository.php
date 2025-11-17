@@ -62,7 +62,7 @@ class UserRepository implements UserRepositoryInterface
             }
 
             $user->update($data);
-            return $user;
+            return $user->fresh();
         } catch (\Exception $e) {
             Log::error('UserRepository::update failed', [
                 'message' => $e->getMessage(),
