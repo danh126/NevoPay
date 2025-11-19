@@ -5,248 +5,196 @@ namespace Tests\Unit\Services;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
+use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use App\Services\TransactionService;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Mockery;
 use Tests\TestCase;
 
 class TransactionServiceTest extends TestCase
 {
-    protected $transactionRepository;
-    protected $walletRepository;
+    protected $transactionRepo;
+    protected $walletRepo;
+    protected $userRepo;
     protected $service;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->transactionRepository = $this->createMock(TransactionRepositoryInterface::class);
-        $this->walletRepository = $this->createMock(WalletRepositoryInterface::class);
+        $this->transactionRepo = Mockery::mock(TransactionRepositoryInterface::class);
+        $this->walletRepo      = Mockery::mock(WalletRepositoryInterface::class);
+        $this->userRepo        = Mockery::mock(UserRepositoryInterface::class);
 
         $this->service = new TransactionService(
-            $this->transactionRepository,
-            $this->walletRepository
+            $this->transactionRepo,
+            $this->walletRepo,
+            $this->userRepo
         );
+
+        // Fake DB transaction
+        DB::shouldReceive('transaction')->andReturnUsing(fn($callback) => $callback());
+    }
+
+    private function makeWallet($id, $userId, $balance = 0, $isActive = true)
+    {
+        $wallet = new Wallet();
+        $wallet->id = $id;
+        $wallet->user_id = $userId;
+        $wallet->balance = $balance;
+        $wallet->is_active = $isActive;
+        return $wallet;
+    }
+
+    private function makeTransaction($id, $amount = 0)
+    {
+        $transaction = new Transaction();
+        $transaction->id = $id;
+        $transaction->amount = $amount;
+        return $transaction;
+    }
+
+    private function mockActiveUser(int $userId)
+    {
+        $this->userRepo
+            ->shouldReceive('isActive')
+            ->with($userId)
+            ->andReturn(true);
     }
 
     public function test_deposit_success()
     {
-        $walletCode = "W123";
-        $amount = 100;
-        $createdBy = 1;
+        $walletNumber = 'W001';
+        $userId = 1;
 
-        $wallet = new Wallet([
-            'id' => 10,
-            'wallet_number' => $walletCode,
-            'balance' => 500
-        ]);
+        $wallet = $this->makeWallet(10, $userId, 100);
+        $updatedWallet = $this->makeWallet(10, $userId, 150);
+        $transaction = $this->makeTransaction(1, 50);
 
-        $transaction = new Transaction([
-            'id' => 1,
-            'wallet_id' => $wallet->id,
-            'amount' => $amount,
-            'type' => 'deposit',
-            'status' => 'completed'
-        ]);
+        $this->mockActiveUser($userId);
 
-        // ensure findByWalletNumber returns wallet for the given code
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('findByWalletNumber')
-            ->with($walletCode)
-            ->willReturn($wallet);
+        $this->walletRepo->shouldReceive('findByWalletNumber')->with($walletNumber)->andReturn($wallet);
+        $this->walletRepo->shouldReceive('find')->with(10)->andReturn($wallet); // owner check
+        $this->walletRepo->shouldReceive('updateBalance')->with(10, 50)->andReturn($updatedWallet);
+        $this->transactionRepo->shouldReceive('create')->once()->andReturn($transaction);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('updateBalance')
-            ->with($wallet->id, $amount)
-            ->willReturn($wallet);
+        $result = $this->service->deposit($walletNumber, 50, $userId);
 
-        $this->transactionRepository
-            ->expects($this->once())
-            ->method('create')
-            ->willReturn($transaction);
-
-        $result = $this->service->deposit($walletCode, $amount, $createdBy);
-
-        $this->assertEquals($wallet, $result['wallet']);
-        $this->assertEquals($transaction, $result['transaction']);
+        $this->assertSame($updatedWallet, $result['wallet']);
+        $this->assertSame($transaction, $result['transaction']);
     }
 
-    public function test_deposit_invalid_amount()
+    public function test_deposit_not_owner()
     {
+        $walletNumber = 'W001';
+        $wallet = $this->makeWallet(10, 2, 100); // owner is 2
+        $this->mockActiveUser(1);
+
+        $this->walletRepo->shouldReceive('findByWalletNumber')->with($walletNumber)->andReturn($wallet);
+        $this->walletRepo->shouldReceive('find')->with(10)->andReturn($wallet);
+
         $this->expectException(InvalidArgumentException::class);
-        $this->service->deposit("W123", 0, 1);
+        $this->expectExceptionMessage("You do not own this wallet.");
+
+        $this->service->deposit($walletNumber, 50, 1);
     }
 
     public function test_withdraw_success()
     {
-        $walletCode = "W123";
-        $amount = 50;
-        $createdBy = 1;
+        $walletNumber = 'W001';
+        $userId = 1;
 
-        $wallet = new Wallet([
-            'id' => 5,
-            'wallet_number' => $walletCode,
-            'balance' => 200
-        ]);
+        $wallet = $this->makeWallet(10, $userId, 100);
+        $updatedWallet = $this->makeWallet(10, $userId, 50);
+        $transaction = $this->makeTransaction(99, 50);
 
-        $transaction = new Transaction([
-            'id' => 2,
-            'wallet_id' => $wallet->id,
-            'amount' => $amount,
-            'type' => 'withdraw',
-            'status' => 'completed'
-        ]);
+        $this->mockActiveUser($userId);
 
-        // findByWalletNumber must return wallet
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('findByWalletNumber')
-            ->with($walletCode)
-            ->willReturn($wallet);
+        $this->walletRepo->shouldReceive('findByWalletNumber')->andReturn($wallet);
+        $this->walletRepo->shouldReceive('find')->with(10)->andReturn($wallet);
+        $this->walletRepo->shouldReceive('hasSufficientBalance')->with(10, 50)->andReturn(true);
+        $this->walletRepo->shouldReceive('deductBalance')->with(10, 50)->andReturn($updatedWallet);
+        $this->transactionRepo->shouldReceive('create')->once()->andReturn($transaction);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('hasSufficientBalance')
-            ->with($wallet->id, $amount)
-            ->willReturn(true);
+        $result = $this->service->withdraw($walletNumber, 50, $userId);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('deductBalance')
-            ->with($wallet->id, $amount)
-            ->willReturn($wallet);
-
-        $this->transactionRepository
-            ->expects($this->once())
-            ->method('create')
-            ->willReturn($transaction);
-
-        $result = $this->service->withdraw($walletCode, $amount, $createdBy);
-
-        $this->assertEquals($wallet, $result['wallet']);
-        $this->assertEquals($transaction, $result['transaction']);
+        $this->assertSame($updatedWallet, $result['wallet']);
+        $this->assertSame($transaction, $result['transaction']);
     }
 
     public function test_withdraw_insufficient_balance()
     {
-        $walletCode = 'W123';
-        $amount = 100;
-        $createdBy = 1;
+        $walletNumber = 'W001';
+        $userId = 1;
+        $wallet = $this->makeWallet(10, $userId, 100);
 
-        $wallet = new Wallet([
-            'id' => 3,
-            'wallet_number' => $walletCode,
-            'balance' => 50
-        ]);
+        $this->mockActiveUser($userId);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('findByWalletNumber')
-            ->with($walletCode)
-            ->willReturn($wallet);
+        $this->walletRepo->shouldReceive('findByWalletNumber')->andReturn($wallet);
+        $this->walletRepo->shouldReceive('find')->with(10)->andReturn($wallet);
+        $this->walletRepo->shouldReceive('hasSufficientBalance')->andReturn(false);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('hasSufficientBalance')
-            ->with($wallet->id, $amount)
-            ->willReturn(false);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Insufficient balance.");
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Insufficient balance.');
-
-        $this->service->withdraw($walletCode, $amount, $createdBy);
+        $this->service->withdraw($walletNumber, 50, $userId);
     }
 
     public function test_transfer_success()
     {
-        $fromCode = "W111";
-        $toCode = "W222";
-        $amount = 40;
-        $createdBy = 1;
+        $fromWallet = $this->makeWallet(1, 1, 100);
+        $toWallet = $this->makeWallet(2, 2, 100);
 
-        $fromWallet = new Wallet([
-            'id' => 1,
-            'wallet_number' => $fromCode,
-            'balance' => 300
-        ]);
+        $senderResult = $this->makeWallet(1, 1, 50);
+        $receiverResult = $this->makeWallet(2, 2, 150);
+        $transaction = $this->makeTransaction(123, 50);
 
-        $toWallet = new Wallet([
-            'id' => 2,
-            'wallet_number' => $toCode,
-            'balance' => 100
-        ]);
+        $this->mockActiveUser(1);
 
-        $transaction = new Transaction([
-            'id' => 3,
-            'wallet_id' => $fromWallet->id,
-            'amount' => $amount,
-            'type' => 'transfer',
-            'status' => 'completed',
-            'sender_wallet_id' => $fromWallet->id,
-            'receiver_wallet_id' => $toWallet->id,
-        ]);
+        $this->walletRepo->shouldReceive('findByWalletNumber')->with('FROM')->andReturn($fromWallet);
+        $this->walletRepo->shouldReceive('findByWalletNumber')->with('TO')->andReturn($toWallet);
+        $this->walletRepo->shouldReceive('find')->with(1)->andReturn($fromWallet); // owner check
+        $this->walletRepo->shouldReceive('hasSufficientBalance')->with(1, 50)->andReturn(true);
+        $this->walletRepo->shouldReceive('deductBalance')->with(1, 50)->andReturn($senderResult);
+        $this->walletRepo->shouldReceive('updateBalance')->with(2, 50)->andReturn($receiverResult);
+        $this->transactionRepo->shouldReceive('create')->once()->andReturn($transaction);
 
-        // Use callback to return correct wallet by code (fixes null return)
-        $this->walletRepository
-            ->expects($this->exactly(2))
-            ->method('findByWalletNumber')
-            ->willReturnOnConsecutiveCalls($fromWallet, $toWallet);
+        $result = $this->service->transfer('FROM', 'TO', 50, 1);
 
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('hasSufficientBalance')
-            ->with($fromWallet->id, $amount)
-            ->willReturn(true);
-
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('deductBalance')
-            ->with($fromWallet->id, $amount)
-            ->willReturn($fromWallet);
-
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('updateBalance')
-            ->with($toWallet->id, $amount)
-            ->willReturn($toWallet);
-
-        $this->transactionRepository
-            ->expects($this->once())
-            ->method('create')
-            ->willReturn($transaction);
-
-        $result = $this->service->transfer($fromCode, $toCode, $amount, $createdBy);
-
-        $this->assertEquals($fromWallet, $result['sender']);
-        $this->assertEquals($toWallet, $result['receiver']);
-        $this->assertEquals($transaction, $result['transaction']);
+        $this->assertSame($senderResult, $result['sender']);
+        $this->assertSame($receiverResult, $result['receiver']);
+        $this->assertSame($transaction, $result['transaction']);
     }
 
     public function test_transfer_same_wallet()
     {
+        $wallet = $this->makeWallet(10, 1, 100);
+        $this->mockActiveUser(1);
+
+        $this->walletRepo->shouldReceive('findByWalletNumber')->andReturn($wallet);
+        $this->walletRepo->shouldReceive('find')->with(10)->andReturn($wallet);
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot transfer to the same wallet.");
 
-        $this->service->transfer("W123", "W123", 100, 1);
+        $this->service->transfer('W1', 'W1', 50, 1);
     }
 
-    public function test_resolveWalletIdFromCode_invalid_wallet()
+    public function test_transfer_insufficient_balance()
     {
-        $this->walletRepository
-            ->expects($this->once())
-            ->method('findByWalletNumber')
-            ->willThrowException(new ModelNotFoundException());
+        $fromWallet = $this->makeWallet(1, 1, 100);
+        $toWallet = $this->makeWallet(2, 2, 200);
+        $this->mockActiveUser(1);
+
+        $this->walletRepo->shouldReceive('findByWalletNumber')->andReturn($fromWallet, $toWallet);
+        $this->walletRepo->shouldReceive('find')->with(1)->andReturn($fromWallet);
+        $this->walletRepo->shouldReceive('hasSufficientBalance')->andReturn(false);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Wallet code 'INVALID' is invalid.");
+        $this->expectExceptionMessage("Insufficient balance.");
 
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('resolveWalletIdFromCode');
-        $method->setAccessible(true);
-
-        $method->invoke($this->service, 'INVALID');
+        $this->service->transfer('FROM', 'TO', 50, 1);
     }
 }

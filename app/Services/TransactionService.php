@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
+use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -10,17 +11,20 @@ use InvalidArgumentException;
 class TransactionService
 {
     public function __construct(protected TransactionRepositoryInterface $transactionRepository, 
-    protected WalletRepositoryInterface $walletRepository){}
+    protected WalletRepositoryInterface $walletRepository, protected UserRepositoryInterface $userRepository){}
 
     /**
-     * Deposit
+     * Deposit (nạp tiền)
      */
-    public function deposit(string $walletCode, float $amount, int $createdBy): array
+    public function deposit(string $walletNumber, float $amount, int $createdBy): array
     {
-        $walletId = $this->resolveWalletIdFromCode($walletCode);
+        $this->validateUserActive($createdBy);
+        $this->validateAmount($amount);
 
-        if ($amount <= 0) {
-            throw new InvalidArgumentException("Amount must be greater than 0.");
+        $walletId = $this->resolveWalletIdFromNumber($walletNumber);
+
+        if($this->getOwnerId($walletId) !== $createdBy){
+            throw new InvalidArgumentException("You do not own this wallet.");
         }
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
@@ -44,20 +48,23 @@ class TransactionService
     }
 
     /**
-     * Withdraw
+     * Withdraw (rút tiền)
      */
-    public function withdraw(string $walletCode, float $amount, int $createdBy): array
+    public function withdraw(string $walletNumber, float $amount, int $createdBy): array
     {
-        $walletId = $this->resolveWalletIdFromCode($walletCode);
+        $this->validateUserActive($createdBy);
+        $this->validateAmount($amount);
 
-        if ($amount <= 0) {
-            throw new InvalidArgumentException("Amount must be greater than 0.");
+        $walletId = $this->resolveWalletIdFromNumber($walletNumber);
+        
+        if($this->getOwnerId($walletId) !== $createdBy){
+            throw new InvalidArgumentException("You do not own this wallet.");
         }
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
 
             if (!$this->walletRepository->hasSufficientBalance($walletId, $amount)) {
-                throw new \Exception("Insufficient balance.");
+                throw new InvalidArgumentException("Insufficient balance.");
             }
 
             $wallet = $this->walletRepository->deductBalance($walletId, $amount);
@@ -79,25 +86,28 @@ class TransactionService
     }
 
     /**
-     * Transfer
+     * Transfer (chuyển khoản)
      */
-    public function transfer(string $fromWalletCode, string $toWalletCode, float $amount, int $createdBy): array
+    public function transfer(string $fromwalletNumber, string $towalletNumber, float $amount, int $createdBy): array
     {
-        $fromWalletId = $this->resolveWalletIdFromCode($fromWalletCode);
-        $toWalletId   = $this->resolveWalletIdFromCode($toWalletCode);
+        $this->validateUserActive($createdBy);
+        $this->validateAmount($amount);
+
+        $fromWalletId = $this->resolveWalletIdFromNumber($fromwalletNumber);
+        $toWalletId   = $this->resolveWalletIdFromNumber($towalletNumber);
+
+        if($this->getOwnerId($fromWalletId) !== $createdBy){
+            throw new InvalidArgumentException("You do not own this wallet.");
+        }
 
         if ($fromWalletId === $toWalletId) {
             throw new InvalidArgumentException("Cannot transfer to the same wallet.");
         }
 
-        if ($amount <= 0) {
-            throw new InvalidArgumentException("Amount must be greater than 0.");
-        }
-
         return DB::transaction(function () use ($fromWalletId, $toWalletId, $amount, $createdBy) {
 
             if (!$this->walletRepository->hasSufficientBalance($fromWalletId, $amount)) {
-                throw new \Exception("Insufficient balance.");
+                throw new InvalidArgumentException("Insufficient balance.");
             }
 
             $sender   = $this->walletRepository->deductBalance($fromWalletId, $amount);
@@ -123,16 +133,55 @@ class TransactionService
     }
 
     /**
-     * Convert wallet_code → wallet_id
+     * Convert wallet_code → wallet_id & validate wallet active
      */
-    private function resolveWalletIdFromCode(string $walletCode): int
+    private function resolveWalletIdFromNumber(string $walletNumber): int
     {
-        try {
-            $wallet = $this->walletRepository->findByWalletNumber($walletCode);
-            return $wallet->id;
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            throw new \InvalidArgumentException("Wallet code '{$walletCode}' is invalid.");
+        $wallet = $this->walletRepository->findByWalletNumber($walletNumber);
+
+        if (!$wallet) {
+            throw new InvalidArgumentException("Wallet not found.");
         }
+
+        if (!$wallet->is_active) {
+            throw new InvalidArgumentException("Wallet is inactive.");
+        }
+
+        return $wallet->id;
+    }
+
+    /**
+     * Validate amount
+     */
+    private function validateAmount(float $amount): void
+    {
+        if ($amount <= 0) {
+            throw new InvalidArgumentException("Amount must be greater than 0.");
+        }
+    }
+
+    /**
+     * Validate user active
+     */
+    private function validateUserActive(int $userId): void
+    {
+        if(!$this->userRepository->isActive($userId)){
+            throw new InvalidArgumentException("User is inactive.");
+        }
+    }
+
+    /**
+     * Check owner wallet
+     */
+    private function getOwnerId(int $walletId): int
+    {
+        $wallet = $this->walletRepository->find($walletId);
+
+        if(!$wallet){
+            throw new InvalidArgumentException("Wallet not found.");
+        }
+
+        return $wallet->user_id;
     }
 
     /**
@@ -143,8 +192,8 @@ class TransactionService
         string $type,
         float $amount,
         int $createdBy,
-        int $senderWalletId = null,
-        int $receiverWalletId = null
+        ?int $senderWalletId = null,
+        ?int $receiverWalletId = null
     ): array {
         return [
             'wallet_id'          => $walletId,
