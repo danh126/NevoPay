@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\TransactionCreated;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
@@ -29,20 +30,24 @@ class TransactionService
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
 
-            $wallet = $this->walletRepository->updateBalance($walletId, $amount);
-
+            // Tạo transaction pending
             $transaction = $this->transactionRepository->create(
                 $this->buildPayload(
                     walletId: $walletId,
                     type: 'deposit',
                     amount: $amount,
-                    createdBy: $createdBy
+                    createdBy: $createdBy,
+                    status: 'pending',
+                    senderWalletId: null,
+                    receiverWalletId: null
                 )
             );
 
+            // Dispatch event
+            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
+
             return [
-                'wallet' => $wallet,
-                'transaction' => $transaction,
+                'transaction' => $transaction
             ];
         });
     }
@@ -63,24 +68,22 @@ class TransactionService
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
 
-            if (!$this->walletRepository->hasSufficientBalance($walletId, $amount)) {
-                throw new InvalidArgumentException("Insufficient balance.");
-            }
-
-            $wallet = $this->walletRepository->deductBalance($walletId, $amount);
-
             $transaction = $this->transactionRepository->create(
                 $this->buildPayload(
                     walletId: $walletId,
                     type: 'withdraw',
                     amount: $amount,
-                    createdBy: $createdBy
+                    createdBy: $createdBy,
+                    status: 'pending',
+                    senderWalletId: null,
+                    receiverWalletId: null
                 )
             );
 
+            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
+
             return [
-                'wallet' => $wallet,
-                'transaction' => $transaction,
+                'transaction' => $transaction
             ];
         });
     }
@@ -106,28 +109,22 @@ class TransactionService
 
         return DB::transaction(function () use ($fromWalletId, $toWalletId, $amount, $createdBy) {
 
-            if (!$this->walletRepository->hasSufficientBalance($fromWalletId, $amount)) {
-                throw new InvalidArgumentException("Insufficient balance.");
-            }
-
-            $sender   = $this->walletRepository->deductBalance($fromWalletId, $amount);
-            $receiver = $this->walletRepository->updateBalance($toWalletId, $amount);
-
             $transaction = $this->transactionRepository->create(
                 $this->buildPayload(
                     walletId: $fromWalletId,
                     type: 'transfer',
                     amount: $amount,
                     createdBy: $createdBy,
+                    status: 'pending',
                     senderWalletId: $fromWalletId,
                     receiverWalletId: $toWalletId
                 )
             );
 
+            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
+
             return [
-                'sender' => $sender,
-                'receiver' => $receiver,
-                'transaction' => $transaction,
+                'transaction' => $transaction
             ];
         });
     }
@@ -171,7 +168,7 @@ class TransactionService
     }
 
     /**
-     * Check owner wallet
+     * Check wallet owner
      */
     private function getOwnerId(int $walletId): int
     {
@@ -192,6 +189,7 @@ class TransactionService
         string $type,
         float $amount,
         int $createdBy,
+        string $status,
         ?int $senderWalletId = null,
         ?int $receiverWalletId = null
     ): array {
@@ -199,7 +197,7 @@ class TransactionService
             'wallet_id'          => $walletId,
             'type'               => $type,
             'amount'             => $amount,
-            'status'             => 'completed',
+            'status'             => $status,
             'description'        => ucfirst($type) . ' transaction',
             'sender_wallet_id'   => $senderWalletId,
             'receiver_wallet_id' => $receiverWalletId,
