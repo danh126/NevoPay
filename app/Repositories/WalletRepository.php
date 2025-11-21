@@ -6,8 +6,8 @@ use App\Models\Wallet;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class WalletRepository implements WalletRepositoryInterface
 {
@@ -95,21 +95,20 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function updateBalance(int $id, float $amount): Wallet
     {
-        return DB::transaction(function () use ($id, $amount) {
-            try {
-                $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
-                $wallet->increment('balance', $amount);
-                return $wallet->fresh();
-            } catch (\Exception $e) {
-                Log::error('WalletRepository::updateBalance failed', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                    'wallet_id' => $id,
-                    'amount' => $amount,
-                ]);
-                throw $e;
-            }
-        });
+        try {
+            $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
+            $wallet->increment('balance', $amount);
+
+            return $wallet->fresh();
+        } catch (\Exception $e) {
+            Log::error('WalletRepository::updateBalance failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'wallet_id' => $id,
+                'amount' => $amount,
+            ]);
+            throw $e;
+        }
     }
     
     /**
@@ -117,16 +116,14 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function deductBalance(int $id, float $amount): Wallet
     {
-        return DB::transaction(function () use ($id, $amount) {
-            $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
-            
-            if ($wallet->balance < $amount) {
-                throw new \Exception('Insufficient balance');
-            }
-            
-            $wallet->decrement('balance', $amount);
-            return $wallet->fresh();
-        });
+        $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
+        
+        if ($wallet->balance < $amount) {
+            throw new \Exception('Insufficient balance');
+        }
+        
+        $wallet->decrement('balance', $amount);
+        return $wallet->fresh();
     }
 
     /**
@@ -164,5 +161,19 @@ class WalletRepository implements WalletRepositoryInterface
     public function hasSufficientBalance(int $id, float $amount): bool
     {
         return Wallet::where('id', $id)->where('balance', '>=', $amount)->exists();
+    }
+
+    /**
+     * Check wallet owner
+     */
+    public function assertOwnedBy(int $walletId, int $userId): void
+    {
+        $isOwner = Wallet::where('id', $walletId)
+        ->where('user_id', $userId)
+        ->exists();
+
+        if(!$isOwner){
+            throw new InvalidArgumentException("You do not own this wallet.");
+        }
     }
 }

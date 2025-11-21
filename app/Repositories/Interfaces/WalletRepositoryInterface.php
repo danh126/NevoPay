@@ -19,4 +19,5 @@ interface WalletRepositoryInterface
     public function delete(int $id): bool;
     public function isActive(int $id): bool;
     public function hasSufficientBalance(int $id, float $amount): bool;
+    public function assertOwnedBy(int $walletId, int $userId): void;
 }
