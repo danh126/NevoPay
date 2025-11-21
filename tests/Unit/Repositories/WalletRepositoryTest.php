@@ -2,12 +2,10 @@
 
 namespace Tests\Unit\Repositories;
 
-use App\Models\User;
 use App\Models\Wallet;
 use App\Repositories\WalletRepository;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class WalletRepositoryTest extends TestCase
@@ -134,5 +132,28 @@ class WalletRepositoryTest extends TestCase
         $wallet = Wallet::factory()->create(['balance' => 500]);
 
         $this->assertTrue($this->repository->hasSufficientBalance($wallet->id, 100));
+    }
+
+    public function test_passes_when_wallet_belongs_to_user()
+    {
+        $wallet = Wallet::factory()->create();
+
+        $this->repository->assertOwnedBy($wallet->id, $wallet->user_id);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_throws_exception_when_wallet_not_found_or_not_owned()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->repository->assertOwnedBy(999, 1);
+    }
+
+    public function test_throws_exception_when_wallet_belongs_to_another_user()
+    {
+        $wallet = Wallet::factory()->create();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->repository->assertOwnedBy($wallet->id, 123);
     }
 }

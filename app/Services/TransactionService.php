@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\TransactionCreated;
+use App\Models\Transaction;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
@@ -17,16 +18,14 @@ class TransactionService
     /**
      * Deposit (nạp tiền)
      */
-    public function deposit(string $walletNumber, float $amount, int $createdBy): array
+    public function deposit(string $walletNumber, float $amount, int $createdBy): Transaction
     {
         $this->validateUserActive($createdBy);
         $this->validateAmount($amount);
 
         $walletId = $this->resolveWalletIdFromNumber($walletNumber);
 
-        if($this->getOwnerId($walletId) !== $createdBy){
-            throw new InvalidArgumentException("You do not own this wallet.");
-        }
+        $this->walletRepository->assertOwnedBy($walletId, $createdBy);
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
 
@@ -46,25 +45,21 @@ class TransactionService
             // Dispatch event
             DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
 
-            return [
-                'transaction' => $transaction
-            ];
+            return $transaction;
         });
     }
 
     /**
      * Withdraw (rút tiền)
      */
-    public function withdraw(string $walletNumber, float $amount, int $createdBy): array
+    public function withdraw(string $walletNumber, float $amount, int $createdBy): Transaction
     {
         $this->validateUserActive($createdBy);
         $this->validateAmount($amount);
 
         $walletId = $this->resolveWalletIdFromNumber($walletNumber);
         
-        if($this->getOwnerId($walletId) !== $createdBy){
-            throw new InvalidArgumentException("You do not own this wallet.");
-        }
+        $this->walletRepository->assertOwnedBy($walletId, $createdBy);
 
         return DB::transaction(function () use ($walletId, $amount, $createdBy) {
 
@@ -82,16 +77,14 @@ class TransactionService
 
             DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
 
-            return [
-                'transaction' => $transaction
-            ];
+            return $transaction;
         });
     }
 
     /**
      * Transfer (chuyển khoản)
      */
-    public function transfer(string $fromwalletNumber, string $towalletNumber, float $amount, int $createdBy): array
+    public function transfer(string $fromwalletNumber, string $towalletNumber, float $amount, int $createdBy): Transaction
     {
         $this->validateUserActive($createdBy);
         $this->validateAmount($amount);
@@ -99,9 +92,7 @@ class TransactionService
         $fromWalletId = $this->resolveWalletIdFromNumber($fromwalletNumber);
         $toWalletId   = $this->resolveWalletIdFromNumber($towalletNumber);
 
-        if($this->getOwnerId($fromWalletId) !== $createdBy){
-            throw new InvalidArgumentException("You do not own this wallet.");
-        }
+        $this->walletRepository->assertOwnedBy($fromWalletId, $createdBy);
 
         if ($fromWalletId === $toWalletId) {
             throw new InvalidArgumentException("Cannot transfer to the same wallet.");
@@ -123,9 +114,7 @@ class TransactionService
 
             DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
 
-            return [
-                'transaction' => $transaction
-            ];
+            return $transaction;
         });
     }
 
@@ -165,20 +154,6 @@ class TransactionService
         if(!$this->userRepository->isActive($userId)){
             throw new InvalidArgumentException("User is inactive.");
         }
-    }
-
-    /**
-     * Check wallet owner
-     */
-    private function getOwnerId(int $walletId): int
-    {
-        $wallet = $this->walletRepository->find($walletId);
-
-        if(!$wallet){
-            throw new InvalidArgumentException("Wallet not found.");
-        }
-
-        return $wallet->user_id;
     }
 
     /**

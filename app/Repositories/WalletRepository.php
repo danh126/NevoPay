@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class WalletRepository implements WalletRepositoryInterface
 {
@@ -160,5 +161,19 @@ class WalletRepository implements WalletRepositoryInterface
     public function hasSufficientBalance(int $id, float $amount): bool
     {
         return Wallet::where('id', $id)->where('balance', '>=', $amount)->exists();
+    }
+
+    /**
+     * Check wallet owner
+     */
+    public function assertOwnedBy(int $walletId, int $userId): void
+    {
+        $isOwner = Wallet::where('id', $walletId)
+        ->where('user_id', $userId)
+        ->exists();
+
+        if(!$isOwner){
+            throw new InvalidArgumentException("You do not own this wallet.");
+        }
     }
 }
