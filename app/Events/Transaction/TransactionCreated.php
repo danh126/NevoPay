@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Transaction;
 
 use App\Models\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class TransactionFailed
+class TransactionCreated
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public Transaction $transaction, public string $reason = ''){}
+    public function __construct(public Transaction $transaction){}
 }

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Events\TransactionCreated;
+use App\Events\Transaction\TransactionCreated;
 use App\Models\Transaction;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Listeners;
+namespace App\Listeners\Transaction;
 
-use App\Events\TransactionCompleted;
-use App\Events\TransactionCreated;
-use App\Events\TransactionFailed;
+use App\Events\Transaction\TransactionCompleted;
+use App\Events\Transaction\TransactionCreated;
+use App\Events\Transaction\TransactionFailed;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,16 +33,13 @@ class ProcessTransaction
 
                 match ($transaction->type) {
                     
-                    'deposit' => $this->walletRepository->updateBalance(
-                        $transaction->wallet_id,
-                        $transaction->amount
-                    ),
+                    'deposit' => $this->handleDeposit($transaction),
 
                     'withdraw' => $this->handleWithdraw($transaction),
 
                     'transfer' => $this->handleTransfer($transaction),
 
-                    default => throw new \Exception("Invalid transaction type"),
+                    default => throw new \RuntimeException("Invalid transaction type"),
                 };
 
                 // Cập nhật trạng thái thành công
@@ -50,6 +47,7 @@ class ProcessTransaction
                     'status' => 'completed',
                     'completed_at' => now(),
                 ]);
+                $transaction->refresh();
 
                 event(new TransactionCompleted($transaction));
             });
@@ -64,11 +62,20 @@ class ProcessTransaction
             $transaction->update([
                 'status' => 'failed',
             ]);
+            $transaction->refresh();
 
             event(new TransactionFailed($transaction, $e->getMessage()));
 
-            throw $e;
+            return;
         }
+    }
+
+    private function handleDeposit($transaction)
+    {
+        $this->walletRepository->updateBalance(
+            $transaction->wallet_id,
+            $transaction->amount
+        );
     }
 
     private function handleWithdraw($transaction)

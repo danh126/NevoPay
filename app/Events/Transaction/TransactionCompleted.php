@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Transaction;
 
 use App\Models\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class TransactionCreated
+class TransactionCompleted
 {
     use Dispatchable, SerializesModels;
 
