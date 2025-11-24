@@ -27,26 +27,16 @@ class TransactionService
 
         $this->walletRepository->assertOwnedBy($walletId, $createdBy);
 
-        return DB::transaction(function () use ($walletId, $amount, $createdBy) {
+        $payload = $this->buildPayload(
+            walletId: $walletId,
+            type: Transaction::TYPE_DEPOSIT,
+            amount: $amount,
+            createdBy: $createdBy,
+            senderWalletId: null,
+            receiverWalletId: null
+        );
 
-            // Tạo transaction pending
-            $transaction = $this->transactionRepository->create(
-                $this->buildPayload(
-                    walletId: $walletId,
-                    type: 'deposit',
-                    amount: $amount,
-                    createdBy: $createdBy,
-                    status: 'pending',
-                    senderWalletId: null,
-                    receiverWalletId: null
-                )
-            );
-
-            // Dispatch event
-            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
-
-            return $transaction;
-        });
+        return $this->createPendingTransaction($payload);
     }
 
     /**
@@ -61,24 +51,16 @@ class TransactionService
         
         $this->walletRepository->assertOwnedBy($walletId, $createdBy);
 
-        return DB::transaction(function () use ($walletId, $amount, $createdBy) {
+        $payload = $this->buildPayload(
+            walletId: $walletId,
+            type: Transaction::TYPE_WITHDRAW,
+            amount: $amount,
+            createdBy: $createdBy,
+            senderWalletId: null,
+            receiverWalletId: null
+        );
 
-            $transaction = $this->transactionRepository->create(
-                $this->buildPayload(
-                    walletId: $walletId,
-                    type: 'withdraw',
-                    amount: $amount,
-                    createdBy: $createdBy,
-                    status: 'pending',
-                    senderWalletId: null,
-                    receiverWalletId: null
-                )
-            );
-
-            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
-
-            return $transaction;
-        });
+        return $this->createPendingTransaction($payload);
     }
 
     /**
@@ -98,24 +80,16 @@ class TransactionService
             throw new InvalidArgumentException("Cannot transfer to the same wallet.");
         }
 
-        return DB::transaction(function () use ($fromWalletId, $toWalletId, $amount, $createdBy) {
+        $payload = $this->buildPayload(
+            walletId: $fromWalletId,
+            type: Transaction::TYPE_TRANSFER,
+            amount: $amount,
+            createdBy: $createdBy,
+            senderWalletId: $fromWalletId,
+            receiverWalletId: $toWalletId
+        );
 
-            $transaction = $this->transactionRepository->create(
-                $this->buildPayload(
-                    walletId: $fromWalletId,
-                    type: 'transfer',
-                    amount: $amount,
-                    createdBy: $createdBy,
-                    status: 'pending',
-                    senderWalletId: $fromWalletId,
-                    receiverWalletId: $toWalletId
-                )
-            );
-
-            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
-
-            return $transaction;
-        });
+        return $this->createPendingTransaction($payload);
     }
 
     /**
@@ -157,6 +131,21 @@ class TransactionService
     }
 
     /**
+     * Create pending transaction
+     */
+    private function createPendingTransaction(array $payload): Transaction
+    {
+        return DB::transaction(function () use ($payload) {
+
+            $transaction = $this->transactionRepository->create($payload);
+
+            DB::afterCommit(fn() => TransactionCreated::dispatch($transaction));
+
+            return $transaction;
+        });
+    }
+
+    /**
      * Transaction payload builder
      */
     private function buildPayload(
@@ -164,7 +153,6 @@ class TransactionService
         string $type,
         float $amount,
         int $createdBy,
-        string $status,
         ?int $senderWalletId = null,
         ?int $receiverWalletId = null
     ): array {
@@ -172,12 +160,12 @@ class TransactionService
             'wallet_id'          => $walletId,
             'type'               => $type,
             'amount'             => $amount,
-            'status'             => $status,
+            'status'             => Transaction::STATUS_PENDING,
             'description'        => ucfirst($type) . ' transaction',
             'sender_wallet_id'   => $senderWalletId,
             'receiver_wallet_id' => $receiverWalletId,
             'created_by'         => $createdBy,
-            'completed_at'       => now(),
+            'completed_at'       => null,
         ];
     }
 }

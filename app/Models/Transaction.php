@@ -28,6 +28,14 @@ class Transaction extends Model
         'completed_at' => 'datetime',
     ];
 
+    const TYPE_DEPOSIT = 'deposit';
+    const TYPE_WITHDRAW = 'withdraw';
+    const TYPE_TRANSFER = 'transfer';
+
+    const STATUS_PENDING  = 'pending';
+    const STATUS_SUCCESS  = 'success';
+    const STATUS_FAILED   = 'failed';
+
     // Model event: tự sinh UUID khi tạo
     protected static function booted()
     {

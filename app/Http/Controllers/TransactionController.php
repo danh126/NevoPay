@@ -25,7 +25,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Deposit successful.',
+            'message' => 'Deposit request accepted.',
             'data' => $result
         ], 201);
     }
@@ -44,9 +44,9 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Withdraw successful.',
+            'message' => 'Withdrawal request accepted.',
             'data' => $result
-        ], 200);
+        ], 201);
     }
 
     /**
@@ -64,8 +64,8 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Transfer successful.',
+            'message' => 'Transfer request accepted.',
             'data' => $result
-        ], 200);
+        ], 201);
     }
 }
