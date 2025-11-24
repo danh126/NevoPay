@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Transaction;
+use App\Models\Wallet;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -33,10 +35,10 @@ class TransactionControllerTest extends TestCase
         Mockery::close();
         parent::tearDown();
     }
-    
-    protected function createWallet(string $walletNumber)
+
+    protected function createWallet(string $walletNumber): Wallet
     {
-        return \App\Models\Wallet::factory()->create([
+        return Wallet::factory()->create([
             'wallet_number' => $walletNumber,
             'user_id' => Auth::id(),
             'is_active' => true,
@@ -52,19 +54,27 @@ class TransactionControllerTest extends TestCase
             'amount' => 100,
         ];
 
+        // Tạo transaction object mock
+        $transaction = new Transaction([
+            'type' => 'deposit',
+            'amount' => 100,
+            'wallet_id' => $wallet->id,
+        ]);
+
         $this->transactionService
             ->shouldReceive('deposit')
             ->once()
             ->with($payload['wallet_number'], $payload['amount'], Auth::id())
-            ->andReturn([
-                'wallet' => ['balance' => 100],
-                'transaction' => ['type' => 'deposit', 'amount' => 100]
-            ]);
+            ->andReturn($transaction);
 
         $response = $this->postJson(route('transactions.deposit'), $payload);
 
         $response->assertStatus(201)
-                 ->assertJsonFragment(['type' => 'deposit', 'amount' => 100]);
+                 ->assertJsonFragment([
+                     'message' => 'Deposit request accepted.',
+                     'type' => 'deposit',
+                     'amount' => '100.00',
+                 ]);
     }
 
     public function testWithdrawSuccess()
@@ -76,19 +86,26 @@ class TransactionControllerTest extends TestCase
             'amount' => 50,
         ];
 
+        $transaction = new Transaction([
+            'type' => 'withdraw',
+            'amount' => 50,
+            'wallet_id' => $wallet->id,
+        ]);
+
         $this->transactionService
             ->shouldReceive('withdraw')
             ->once()
             ->with($payload['wallet_number'], $payload['amount'], Auth::id())
-            ->andReturn([
-                'wallet' => ['balance' => 50],
-                'transaction' => ['type' => 'withdraw', 'amount' => 50]
-            ]);
+            ->andReturn($transaction);
 
         $response = $this->postJson(route('transactions.withdraw'), $payload);
 
-        $response->assertStatus(200)
-                 ->assertJsonFragment(['type' => 'withdraw', 'amount' => 50]);
+        $response->assertStatus(201)
+                 ->assertJsonFragment([
+                     'message' => 'Withdrawal request accepted.',
+                     'type' => 'withdraw',
+                     'amount' => '50.00',
+                 ]);
     }
 
     public function testTransferSuccess()
@@ -102,19 +119,30 @@ class TransactionControllerTest extends TestCase
             'amount' => 30,
         ];
 
+        $transaction = new Transaction([
+            'type' => 'transfer',
+            'amount' => 30,
+            'wallet_id' => $senderWallet->id,
+        ]);
+
         $this->transactionService
             ->shouldReceive('transfer')
             ->once()
-            ->with($payload['wallet_number'], $payload['to_wallet_number'], $payload['amount'], Auth::id())
-            ->andReturn([
-                'sender' => ['balance' => 70],
-                'receiver' => ['balance' => 130],
-                'transaction' => ['type' => 'transfer', 'amount' => 30]
-            ]);
+            ->with(
+                $payload['wallet_number'],
+                $payload['to_wallet_number'],
+                $payload['amount'],
+                Auth::id()
+            )
+            ->andReturn($transaction);
 
         $response = $this->postJson(route('transactions.transfer'), $payload);
 
-        $response->assertStatus(200)
-                 ->assertJsonFragment(['type' => 'transfer', 'amount' => 30]);
+        $response->assertStatus(201)
+                 ->assertJsonFragment([
+                     'message' => 'Transfer request accepted.',
+                     'type' => 'transfer',
+                     'amount' => '30.00',
+                 ]);
     }
 }
