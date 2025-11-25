@@ -33,7 +33,7 @@ class Transaction extends Model
     const TYPE_TRANSFER = 'transfer';
 
     const STATUS_PENDING  = 'pending';
-    const STATUS_SUCCESS  = 'success';
+    const STATUS_COMPLETED  = 'completed';
     const STATUS_FAILED   = 'failed';
 
     // Model event: tự sinh UUID khi tạo

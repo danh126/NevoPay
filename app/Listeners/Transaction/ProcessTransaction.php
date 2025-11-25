@@ -5,6 +5,7 @@ namespace App\Listeners\Transaction;
 use App\Events\Transaction\TransactionCompleted;
 use App\Events\Transaction\TransactionCreated;
 use App\Events\Transaction\TransactionFailed;
+use App\Models\Transaction;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class ProcessTransaction
         $transaction = $event->transaction;
 
         // Chỉ xử lý giao dịch pending
-        if($transaction->status !== 'pending'){
+        if($transaction->status !== Transaction::STATUS_PENDING){
             return;
         }
 
@@ -44,7 +45,7 @@ class ProcessTransaction
 
                 // Cập nhật trạng thái thành công
                 $transaction->update([
-                    'status' => 'completed',
+                    'status' => Transaction::STATUS_COMPLETED,
                     'completed_at' => now(),
                 ]);
                 $transaction->refresh();
@@ -60,7 +61,7 @@ class ProcessTransaction
             ]);
 
             $transaction->update([
-                'status' => 'failed',
+                'status' => Transaction::STATUS_FAILED,
             ]);
             $transaction->refresh();
 
