@@ -10,5 +10,5 @@ class TransactionCompleted
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public Transaction $transaction){}
+    public function __construct(public Transaction $transaction, public ?array $oldValues = null){}
 }
