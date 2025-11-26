@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -18,4 +19,10 @@ Route::prefix('transactions')->middleware('auth:sanctum')->group(function () {
     Route::post('deposit', [TransactionController::class, 'deposit'])->name('transactions.deposit');
     Route::post('withdraw', [TransactionController::class, 'withdraw'])->name('transactions.withdraw');
     Route::post('transfer', [TransactionController::class, 'transfer'])->name('transactions.transfer');
+});
+
+// Audit Logs API
+Route::prefix('admin')->middleware(['auth:sanctum', 'isAdmin'])->group(function() {
+     Route::get('audit-logs', [AuditLogController::class, 'index']);
+     Route::get('audit-logs/{id}', [AuditLogController::class, 'show']);
 });

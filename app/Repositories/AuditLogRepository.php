@@ -6,7 +6,6 @@ use App\Models\AuditLog;
 use App\Repositories\Interfaces\AuditLogRepositoryInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 
 class AuditLogRepository implements AuditLogRepositoryInterface
@@ -38,50 +37,6 @@ class AuditLogRepository implements AuditLogRepositoryInterface
             Log::error('AuditLogRepository::create failed', [
                 'message' => $e->getMessage(),
                 'data' => $data,
-            ]);
-            throw $e;
-        }
-    }
-
-    /** 
-     * Cập nhật audit Log.
-     */
-    public function update(int $id, array $data): ?AuditLog
-    {
-        try {
-            $log = $this->find($id);
-            if (!$log) {
-                throw new ModelNotFoundException("AuditLog not found with ID {$id}");
-            }
-
-            $log->update($data);
-            return $log->fresh();
-        } catch (\Exception $e) {
-            Log::error('AuditLogRepository::update failed', [
-                'message' => $e->getMessage(),
-                'audit_log_id' => $id,
-                'data' => $data,
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Xóa audit Log theo ID.
-     */
-    public function delete(int $id): bool
-    {
-        try {
-            $log = $this->find($id);
-            if (!$log) {
-                throw new ModelNotFoundException("AuditLog not found with ID {$id}");
-            }
-
-            return (bool) $log->delete();
-        } catch (\Exception $e) {
-            Log::error('AuditLogRepository::delete failed', [
-                'message' => $e->getMessage(),
-                'audit_log_id' => $id,
             ]);
             throw $e;
         }
