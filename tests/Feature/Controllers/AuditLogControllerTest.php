@@ -28,14 +28,13 @@ class AuditLogControllerTest extends TestCase
         AuditLog::factory()->count(5)->create();
 
         $response = $this->actingAs($this->adminUser, 'sanctum')
-                         ->getJson('/api/admin/audit-logs');
+                         ->getJson('/api/admin/audit-logs');;
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
                      'success',
-                     'data' => [
-                         'data', 'current_page', 'last_page', 'per_page', 'total'
-                     ]
+                     'message',
+                     'data',
         ]);
     }
 

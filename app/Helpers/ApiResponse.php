@@ -48,4 +48,12 @@ class ApiResponse
 
         ], 200);
     }
+
+    public static function forbidden(string $message = 'Forbidden')
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+        ], 403);
+    }
 }
