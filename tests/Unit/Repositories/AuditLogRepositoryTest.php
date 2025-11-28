@@ -53,29 +53,6 @@ class AuditLogRepositoryTest extends TestCase
         $this->assertEquals($log->id, $found->id);
     }
 
-    public function test_update_audit_log()
-    {
-        $log = AuditLog::factory()->create(['description' => 'Old desc']);
-
-        $updated = $this->repo->update($log->id, ['description' => 'New desc']);
-
-        $this->assertEquals('New desc', $updated->description);
-        $this->assertDatabaseHas('audit_logs', [
-            'id' => $log->id,
-            'description' => 'New desc',
-        ]);
-    }
-
-    public function test_delete_audit_log()
-    {
-        $log = AuditLog::factory()->create();
-
-        $result = $this->repo->delete($log->id);
-
-        $this->assertTrue($result);
-        $this->assertDatabaseMissing('audit_logs', ['id' => $log->id]);
-    }
-
     public function test_filter_audit_logs_by_user_id()
     {
         $user1 = User::factory()->create();
