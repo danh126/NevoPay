@@ -27,15 +27,18 @@ class ProcessTransactionTest extends TestCase
 
         Event::fake();
 
-        // Fake DB transaction()
-        DB::shouldReceive('transaction')
-            ->andReturnUsing(fn ($callback) => $callback());
+        // Fake DB transaction() và afterCommit
+        DB::shouldReceive('transaction')->andReturnUsing(fn ($callback) => $callback());
+        DB::shouldReceive('afterCommit')->andReturnUsing(fn ($callback) => $callback());
     }
 
     /** Create transaction instance without touching DB */
     private function makeTransaction(array $override = [])
     {
-        $transaction = new Transaction(array_merge([
+        /** @var Transaction|\Mockery\MockInterface $transaction */
+        $transaction = \Mockery::mock(Transaction::class)->makePartial();
+
+        $transaction->fill(array_merge([
             'id'                => 1,
             'wallet_id'         => 10,
             'sender_wallet_id'  => null,
@@ -50,9 +53,7 @@ class ProcessTransactionTest extends TestCase
 
         $transaction->exists = true;
 
-        // mock update + refresh
-        $transaction = \Mockery::mock($transaction)->makePartial();
-        $transaction->shouldReceive('refresh')->andReturnSelf();
+        $transaction->shouldReceive('fresh')->andReturnSelf();
 
         return $transaction;
     }

@@ -34,11 +34,11 @@ class ProcessTransaction
 
                 match ($transaction->type) {
                     
-                    'deposit' => $this->handleDeposit($transaction),
+                    Transaction::TYPE_DEPOSIT => $this->handleDeposit($transaction),
 
-                    'withdraw' => $this->handleWithdraw($transaction),
+                    Transaction::TYPE_WITHDRAW => $this->handleWithdraw($transaction),
 
-                    'transfer' => $this->handleTransfer($transaction),
+                    Transaction::TYPE_TRANSFER => $this->handleTransfer($transaction),
 
                     default => throw new \RuntimeException("Invalid transaction type"),
                 };
@@ -48,24 +48,24 @@ class ProcessTransaction
                     'status' => Transaction::STATUS_COMPLETED,
                     'completed_at' => now(),
                 ]);
-                $transaction->refresh();
 
-                event(new TransactionCompleted($transaction));
+                DB::afterCommit(fn() => event(new TransactionCompleted($transaction)));
             });
 
         } catch (\Throwable $e) {
 
             Log::error("Transaction failed", [
                 'transaction_id' => $transaction->id,
-                'message' => $e->getMessage(),
+                'type'           => $transaction->type,
+                'amount'         => $transaction->amount,
+                'message'        => $e->getMessage(),
             ]);
 
             $transaction->update([
                 'status' => Transaction::STATUS_FAILED,
             ]);
-            $transaction->refresh();
 
-            event(new TransactionFailed($transaction, $e->getMessage()));
+            DB::afterCommit(fn() => event(new TransactionFailed($transaction->fresh(), $e->getMessage())));
 
             return;
         }

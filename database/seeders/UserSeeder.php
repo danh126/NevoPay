@@ -16,11 +16,13 @@ class UserSeeder extends Seeder
     {
         // Admin
         User::create([
-            'name' => 'Admin',
+            'full_name' => 'Admin',
             'email' => 'admin@nevo.com',
+            'phone_number' => fake()->unique()->phoneNumber(),
             'password' => 'password123',
             'role' => 'admin',
             'is_active' => true,
+            'two_factor_enabled' => false,
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
