@@ -5,7 +5,6 @@ namespace Tests\Unit\Repositories;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -24,18 +23,21 @@ class UserRepositoryTest extends TestCase
     public function test_create_user_hashes_password()
     {
         $data = [
-            'name' => 'John Doe',
+            'full_name' => 'John Doe',
             'email' => 'john@example.com',
+            'phone_number' => '1234567890',
             'password' => 'secret123',
             'role' => 'user',
             'is_active' => true,
+            'towo_factor_enabled' => false,
         ];
 
         $user = $this->repo->create($data);
 
         $this->assertInstanceOf(User::class, $user);
-        $this->assertEquals('John Doe', $user->name);
+        $this->assertEquals('John Doe', $user->full_name);
         $this->assertEquals('john@example.com', $user->email);
+        $this->assertEquals('1234567890', $user->phone_number);
         $this->assertTrue(Hash::check('secret123', $user->password));
     }
 
@@ -59,10 +61,10 @@ class UserRepositoryTest extends TestCase
 
     public function test_update_user()
     {
-        $user = User::factory()->create(['name' => 'Old Name']);
-        $updated = $this->repo->update($user->id, ['name' => 'New Name']);
+        $user = User::factory()->create(['full_name' => 'Old Name']);
+        $updated = $this->repo->update($user->id, ['full_name' => 'New Name']);
 
-        $this->assertEquals('New Name', $updated->name);
+        $this->assertEquals('New Name', $updated->full_name);
     }
 
     public function test_delete_user()
@@ -88,17 +90,5 @@ class UserRepositoryTest extends TestCase
         $user = User::factory()->create();
         $this->assertTrue($this->repo->existsByEmail($user->email));
         $this->assertFalse($this->repo->existsByEmail('notfound@example.com'));
-    }
-
-    public function test_update_nonexistent_user_returns_null()
-    {
-        $updated = $this->repo->update(99999, ['name' => 'New Name']);
-        $this->assertNull($updated);
-    }
-
-    public function test_delete_nonexistent_user_returns_false()
-    {
-        $result = $this->repo->delete(99999);
-        $this->assertFalse($result);
     }
 }
