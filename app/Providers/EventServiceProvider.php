@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\Auth\UserLoggedIn;
+use App\Events\Auth\UserLoggedOut;
+use App\Events\Auth\UserRegistered;
 use App\Events\Transaction\TransactionCompleted;
 use App\Events\Transaction\TransactionCreated;
 use App\Events\Transaction\TransactionFailed;
@@ -19,6 +22,7 @@ class EventServiceProvider extends ServiceProvider
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
+        // Transaction Events
         TransactionCreated::class => [
             ProcessTransaction::class,
             RecordAuditLog::class,
@@ -31,6 +35,19 @@ class EventServiceProvider extends ServiceProvider
 
         TransactionFailed::class => [
             HandleFailedTransaction::class,
+            RecordAuditLog::class,
+        ],
+
+        // User Events
+        UserRegistered::class => [
+            RecordAuditLog::class,
+        ],
+
+        UserLoggedIn::class => [
+            RecordAuditLog::class,
+        ],
+
+        UserLoggedOut::class => [
             RecordAuditLog::class,
         ],
     ];

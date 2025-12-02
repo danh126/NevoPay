@@ -12,7 +12,7 @@ class WalletService
     /**
      * Tạo ví mới cho user.
      */
-    public function createForUser(int $userId, array $data)
+    public function createForUser(int $userId, array $data = [])
     {
         $data['user_id'] = $userId;
         $data['balance'] = $data['balance'] ?? 0;
