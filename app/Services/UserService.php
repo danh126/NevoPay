@@ -15,7 +15,7 @@ class UserService
 {
     public function __construct(protected UserRepositoryInterface $userRepo, protected WalletService $walletService){}
 
-    public function register(array $data)
+    public function register(array $data): User
     {
         return DB::transaction(function () use ($data) {
             $user = $this->userRepo->create($data);
@@ -28,20 +28,24 @@ class UserService
         });
     }
 
-    public function login(array $credentials)
+    public function login(array $credentials): array
     {
-        if (!isset($credentials['email'], $credentials['password']))
+        $this->validateCredentials($credentials);
+        $email = strtolower(trim($credentials['email']));
+
+        $user = $this->userRepo->findByEmail($email);
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw new AuthenticationException('Invalid credentials.');
+        }
 
-        $user = $this->userRepo->findByEmail($credentials['email']);
+        if (!$this->userRepo->isActive($user->id)) {
+            throw new AuthenticationException('Account is inactive.');
+        }
 
-        if(!$user || !Hash::check($credentials['password'], $user->password))
-            throw new AuthenticationException("Invalid credentials..");
+        // OTP and 2FA checks would go here
 
-        if(!$this->userRepo->isActive($user->id))
-            throw new AuthenticationException("Account is inactive.");
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token', ['*'] ,\now()->addDays(3))->plainTextToken;
 
         event(new UserLoggedIn($user));
 
@@ -52,10 +56,17 @@ class UserService
         ];
     }
 
-    public function logout(User $user)
+    public function logout(User $user): void
     {
-        $user->tokens()->delete();
+        $user->currentAccessToken()?->delete();
 
         event(new UserLoggedOut($user));
+    }
+
+    private function validateCredentials(array $credentials): void
+    {
+        if (!isset($credentials['email'], $credentials['password'])) {
+            throw new AuthenticationException('Invalid credentials.');
+        }
     }
 }
