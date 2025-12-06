@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\LoginDTO;
 use App\Events\Auth\UserLoggedIn;
 use App\Events\Auth\UserLoggedOut;
 use App\Events\Auth\UserRegistered;
@@ -28,7 +29,7 @@ class UserService
         });
     }
 
-    public function login(array $credentials): array
+    public function login(array $credentials): LoginDTO
     {
         $this->validateCredentials($credentials);
         $email = strtolower(trim($credentials['email']));
@@ -49,11 +50,10 @@ class UserService
 
         event(new UserLoggedIn($user));
 
-        return [
-            'user' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ];
+        return new LoginDTO(
+            user: $user,
+            accessToken: $token,
+        );
     }
 
     public function logout(User $user): void
