@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,4 +18,8 @@ Route::get('/login', function () {
 
 Route::get('/register', function () {
     return view('auth.register');
+});
+
+Route::get('/preview-mail', function () {
+    return new OtpMail('123456', 15);
 });

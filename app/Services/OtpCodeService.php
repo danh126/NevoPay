@@ -9,27 +9,34 @@ use Illuminate\Support\Facades\DB;
 
 class OtpCodeService
 {
-    public function __construct(protected OtpCodeRepositoryInterface $otpRepo){}
+    public function __construct(protected OtpCodeRepositoryInterface $otpRepo, protected MailService $mailService){}
 
     /**
-     * Generate OTP
+     * Generate and send OTP
      */
-    public function generateOtp(int $userId, string $channel): GenerateOtpDTO
+    public function generateAndSendOtp(int $userId, string $channel): GenerateOtpDTO
     {
         $channel = $this->validateChannel($channel);
         $secret = $this->validateSecretKey();
+        $ttl = config('otp.ttl', 5);
 
         $otp = random_int(100000, 999999);
 
         $hash = hash('sha256', $otp . $secret);
 
-        $expiresAt = Carbon::now()->addMinutes(config('otp.ttl', 5));
+        $expiresAt = Carbon::now()->addMinutes($ttl);
 
         $record = $this->otpRepo->createOtp(
             $userId,
             $channel,
             $hash,
             $expiresAt
+        );
+
+        $this->mailService->sendOtp(
+            email: $record->user->email,
+            otp: (string) $otp,
+            expiresInMinutes: $ttl,
         );
 
         return new GenerateOtpDTO(
