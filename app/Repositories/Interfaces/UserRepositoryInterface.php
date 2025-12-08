@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 interface UserRepositoryInterface
 {
     public function all(): Collection;
-    public function find(int $id): ?User;
+    public function findById(int $id): ?User;
     public function findByEmail(string $email): ?User;
     public function findByPhone(string $phone): ?User;
     public function create(array $data): ?User;

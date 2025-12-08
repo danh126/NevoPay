@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class OtpCodeService
 {
-    public function __construct(protected OtpCodeRepositoryInterface $otpRepo, protected MailService $mailService){}
+    public function __construct(protected OtpCodeRepositoryInterface $otpCodeRepo, protected MailService $mailService){}
 
     /**
      * Generate and send OTP
@@ -26,7 +26,7 @@ class OtpCodeService
 
         $expiresAt = Carbon::now()->addMinutes($ttl);
 
-        $record = $this->otpRepo->createOtp(
+        $record = $this->otpCodeRepo->createOtp(
             $userId,
             $channel,
             $hash,
@@ -53,27 +53,27 @@ class OtpCodeService
         $channel = $this->validateChannel($channel);
         $secret = $this->validateSecretKey();
         
-        $otp = $this->otpRepo->getValidOtp($userId, $channel);
+        $otp = $this->otpCodeRepo->getValidOtp($userId, $channel);
 
         if (!$otp) {
             return false;
         }
 
         if ($otp->attempts >= config('otp.max_attempts', 3)) {
-            $this->otpRepo->markAsUsed($otp);
+            $this->otpCodeRepo->markAsUsed($otp);
             return false;
         }
 
         $computedHash = hash('sha256', $inputOtp . $secret);
 
         if (!hash_equals($otp->code_hash, $computedHash)) {
-            $this->otpRepo->incrementAttempts($otp);
+            $this->otpCodeRepo->incrementAttempts($otp);
             return false;
         }
 
         DB::transaction(function () use ($otp, $userId, $channel) {
-            $this->otpRepo->markAsUsed($otp);
-            $this->otpRepo->invalidateAllActiveOtps($userId, $channel);  
+            $this->otpCodeRepo->markAsUsed($otp);
+            $this->otpCodeRepo->invalidateAllActiveOtps($userId, $channel);  
         });
         
         return true;

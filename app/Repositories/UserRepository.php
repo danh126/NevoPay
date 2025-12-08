@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +21,7 @@ class UserRepository implements UserRepositoryInterface
     /**
      * Tìm người dùng theo ID
      */
-    public function find(int $id): ?User
+    public function findById(int $id): ?User
     {
         return User::findOrFail($id);
     }
@@ -56,7 +55,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function update(int $id, array $data): ?User
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
 
         if (!$user) {
             throw new ModelNotFoundException("User not found with ID {$id}");
@@ -71,7 +70,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function updatePassword(int $id, string $newPassword): ?User
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
 
         if (!$user) {
             throw new ModelNotFoundException("User not found with ID {$id}");
@@ -88,7 +87,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function delete(int $id): bool
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
         
         if (!$user) {
             throw new ModelNotFoundException("User not found with ID {$id}");
@@ -102,7 +101,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function isActive(int $id): bool
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
         return $user ? (bool) $user->is_active : false;
     }
 
@@ -119,7 +118,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function enableTwoFactor(int $id): bool
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
 
         if (!$user) {
             throw new ModelNotFoundException("User not found with ID {$id}");
@@ -135,7 +134,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function disableTwoFactor(int $id): bool
     {
-        $user = $this->find($id);
+        $user = $this->findById($id);
 
         if (!$user) {
             throw new ModelNotFoundException("User not found with ID {$id}");

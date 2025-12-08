@@ -8,7 +8,8 @@ class LoginDTO
 {
     public function __construct(
         public readonly User $user,
-        public readonly string $accessToken,
-        public readonly string $tokenType = 'Bearer',
+        public readonly ?string $accessToken,
+        public readonly ?string $tokenType = 'Bearer',
+        public readonly bool $twoFactorRequired = false,
     ){}
 }

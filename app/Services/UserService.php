@@ -14,7 +14,11 @@ use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
-    public function __construct(protected UserRepositoryInterface $userRepo, protected WalletService $walletService){}
+    public function __construct(
+        protected UserRepositoryInterface $userRepo, 
+        protected WalletService $walletService, 
+        protected OtpCodeService $otpCodeService
+    ){}
 
     public function register(array $data): User
     {
@@ -44,8 +48,44 @@ class UserService
             throw new AuthenticationException('Account is inactive.');
         }
 
-        // OTP and 2FA checks would go here
+        // Check if 2FA is enabled
+        if($user->two_factor_enabled) {
+            $this->otpCodeService->generateAndSendOtp($user->id, 'email');
 
+            return new LoginDTO(
+                user: $user,
+                accessToken: null,
+                tokenType: null,
+                twoFactorRequired: true,
+            );
+        }
+
+        // If 2FA is not enabled, proceed to create token
+        $token = $user->createToken('auth_token', ['*'] ,\now()->addDays(3))->plainTextToken;
+
+        event(new UserLoggedIn($user));
+
+        return new LoginDTO(
+            user: $user,
+            accessToken: $token,
+        );
+    }
+
+    public function verifyTwoFactor(int $userId, string $inputOtp): LoginDTO
+    {
+        $user = $this->userRepo->findById($userId);
+        if (!$user) {
+            throw new AuthenticationException('User not found.');
+        }
+
+        // Verify OTP
+        $isValid = $this->otpCodeService->verifyOtp($user->id, 'email', $inputOtp);
+
+        if (!$isValid) {
+            throw new AuthenticationException('Invalid or expired OTP code.');
+        }
+
+        // Generate auth token
         $token = $user->createToken('auth_token', ['*'] ,\now()->addDays(3))->plainTextToken;
 
         event(new UserLoggedIn($user));
