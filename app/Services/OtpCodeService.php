@@ -9,27 +9,34 @@ use Illuminate\Support\Facades\DB;
 
 class OtpCodeService
 {
-    public function __construct(protected OtpCodeRepositoryInterface $otpRepo){}
+    public function __construct(protected OtpCodeRepositoryInterface $otpCodeRepo, protected MailService $mailService){}
 
     /**
-     * Generate OTP
+     * Generate and send OTP
      */
-    public function generateOtp(int $userId, string $channel): GenerateOtpDTO
+    public function generateAndSendOtp(int $userId, string $channel): GenerateOtpDTO
     {
         $channel = $this->validateChannel($channel);
         $secret = $this->validateSecretKey();
+        $ttl = config('otp.ttl', 5);
 
         $otp = random_int(100000, 999999);
 
         $hash = hash('sha256', $otp . $secret);
 
-        $expiresAt = Carbon::now()->addMinutes(config('otp.ttl', 5));
+        $expiresAt = Carbon::now()->addMinutes($ttl);
 
-        $record = $this->otpRepo->createOtp(
+        $record = $this->otpCodeRepo->createOtp(
             $userId,
             $channel,
             $hash,
             $expiresAt
+        );
+
+        $this->mailService->sendOtp(
+            email: $record->user->email,
+            otp: (string) $otp,
+            expiresInMinutes: $ttl,
         );
 
         return new GenerateOtpDTO(
@@ -46,27 +53,27 @@ class OtpCodeService
         $channel = $this->validateChannel($channel);
         $secret = $this->validateSecretKey();
         
-        $otp = $this->otpRepo->getValidOtp($userId, $channel);
+        $otp = $this->otpCodeRepo->getValidOtp($userId, $channel);
 
         if (!$otp) {
             return false;
         }
 
         if ($otp->attempts >= config('otp.max_attempts', 3)) {
-            $this->otpRepo->markAsUsed($otp);
+            $this->otpCodeRepo->markAsUsed($otp);
             return false;
         }
 
         $computedHash = hash('sha256', $inputOtp . $secret);
 
         if (!hash_equals($otp->code_hash, $computedHash)) {
-            $this->otpRepo->incrementAttempts($otp);
+            $this->otpCodeRepo->incrementAttempts($otp);
             return false;
         }
 
         DB::transaction(function () use ($otp, $userId, $channel) {
-            $this->otpRepo->markAsUsed($otp);
-            $this->otpRepo->invalidateAllActiveOtps($userId, $channel);  
+            $this->otpCodeRepo->markAsUsed($otp);
+            $this->otpCodeRepo->invalidateAllActiveOtps($userId, $channel);  
         });
         
         return true;
