@@ -4,8 +4,11 @@ namespace Tests\Unit\Services;
 
 use App\DTO\GenerateOtpDTO;
 use App\Models\OtpCode;
+use App\Models\User;
 use App\Repositories\Interfaces\OtpCodeRepositoryInterface;
+use App\Services\MailService;
 use App\Services\OtpCodeService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +16,10 @@ use Tests\TestCase;
 
 class OtpCodeServiceTest extends TestCase
 {
+    use RefreshDatabase;
+    
     protected $otpRepo;
+    protected $mailService;
     protected $service;
 
     protected function setUp(): void
@@ -21,7 +27,9 @@ class OtpCodeServiceTest extends TestCase
         parent::setUp();
 
         $this->otpRepo = $this->createMock(OtpCodeRepositoryInterface::class);
-        $this->service = new OtpCodeService($this->otpRepo);
+        $this->mailService = $this->createMock(MailService::class);
+
+        $this->service = new OtpCodeService($this->otpRepo, $this->mailService);
 
         // Set fake secret
         Config::set('otp.secret', 'FAKE_SECRET_KEY');
@@ -29,11 +37,15 @@ class OtpCodeServiceTest extends TestCase
         Config::set('otp.max_attempts', 3);
     }
 
-    public function test_generates_otp_correctly()
+    public function test_generates_and_send_otp_correctly()
     {
-        $userId = 1;
-        $channel = 'email';
+        $user = User::factory()->create();
 
+        $userId = $user->id;
+        $channel = 'email';
+        $ttl = config('otp.ttl', 5);
+
+        // Fake OTP record to be returned by the repository
         $fakeOtpRecord = new OtpCode([
             'user_id' => $userId,
             'channel' => $channel,
@@ -43,6 +55,7 @@ class OtpCodeServiceTest extends TestCase
             'is_used' => false,
         ]);
 
+        // Mock createOtp to return the fake record
         $this->otpRepo->expects($this->once())
             ->method('createOtp')
             ->with(
@@ -53,7 +66,16 @@ class OtpCodeServiceTest extends TestCase
             )
             ->willReturn($fakeOtpRecord);
 
-        $result = $this->service->generateOtp($userId, $channel);
+        // Mock mail service to expect sendOtp call
+        $this->mailService->expects($this->once())
+            ->method('sendOtp')
+            ->with(
+                $this->equalTo($user->email),
+                $this->callback(fn($otp) => is_string($otp) && strlen($otp) === 6),
+                $this->equalTo($ttl)
+            );
+
+        $result = $this->service->generateAndSendOtp($userId, $channel);
 
         $this->assertInstanceOf(GenerateOtpDTO::class, $result);
         $this->assertIsString($result->otp_code);

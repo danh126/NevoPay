@@ -2,15 +2,17 @@
 
 namespace Tests\Unit\Services;
 
+use App\DTO\LoginDTO;
+use App\Events\Auth\UserLoggedIn;
 use App\Events\Auth\UserLoggedOut;
 use App\Events\Auth\UserRegistered;
-use App\Events\Auth\UserLoggedIn;
 use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Services\OtpCodeService;
 use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
@@ -18,106 +20,197 @@ use Tests\TestCase;
 
 class UserServiceTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
+    use RefreshDatabase;
+    
+    protected $userRepo;
+    protected $walletService;
+    protected $otpCodeService;
+    protected $service;
 
-        parent::tearDown();
-    }
-
-    public function test_register_creates_user_and_wallet_and_dispatches_event()
+    protected function setUp(): void
     {
+        parent::setUp();
+
+        $this->userRepo = Mockery::mock(UserRepositoryInterface::class);
+        $this->walletService = Mockery::mock(WalletService::class);
+        $this->otpCodeService = Mockery::mock(OtpCodeService::class);
+
+        $this->service = new UserService(
+            $this->userRepo,
+            $this->walletService,
+            $this->otpCodeService
+        );
+
         Event::fake();
-
-        $user = new User();
-        $user->id = 123;
-
-        $userRepo = Mockery::mock(UserRepositoryInterface::class);
-        $userRepo->shouldReceive('create')->once()->with(['name' => 'Test'])->andReturn($user);
-
-        $walletService = Mockery::mock(WalletService::class);
-        $walletService->shouldReceive('createForUser')->once()->with(123);
-
-        DB::shouldReceive('transaction')->once()->andReturnUsing(function ($closure) {
-            return $closure();
-        });
-
-        DB::shouldReceive('afterCommit')->once()->andReturnUsing(function ($cb) {
-            $cb();
-        });
-
-        $service = new UserService($userRepo, $walletService);
-
-        $result = $service->register(['name' => 'Test']);
-
-        $this->assertSame($user, $result);
-
-        Event::assertDispatched(UserRegistered::class, function ($e) use ($user) {
-            return isset($e->user) && $e->user->id === $user->id;
-        });
     }
 
-    public function test_login_success_returns_token_and_user()
+    public function test_registers_user_and_dispatches_event()
     {
-        $password = 'secret';
-        $hashed = 'hashed-password';
+        $data = ['email' => 'test@example.com'];
 
-        $user = Mockery::mock(User::class);
-        $user->password = $hashed;
+        $user = Mockery::mock(User::class)->makePartial();
         $user->id = 1;
+        $user->email = 'test@example.com';
 
-        $tokenObj = (object) ['plainTextToken' => 'token123'];
-        $user->shouldReceive('createToken')->once()->with('auth_token')->andReturn($tokenObj);
+        $this->userRepo->shouldReceive('create')
+            ->once()
+            ->with($data)
+            ->andReturn($user);
 
-        $userRepo = Mockery::mock(UserRepositoryInterface::class);
-        $userRepo->shouldReceive('findByEmail')->once()->with('test@example.com')->andReturn($user);
-        $userRepo->shouldReceive('isActive')->once()->with(1)->andReturn(true);
+        $this->walletService->shouldReceive('createForUser')
+            ->once()
+            ->with($user->id);
 
-        Hash::shouldReceive('check')->once()->with($password, $hashed)->andReturn(true);
+        $result = $this->service->register($data);
 
-        $service = new UserService($userRepo, Mockery::mock(WalletService::class));
+        $this->assertInstanceOf(User::class, $result);
 
-        $res = $service->login(['email' => ' test@example.com ', 'password' => $password]);
-
-        $this->assertSame($user, $res['user']);
-        $this->assertEquals('token123', $res['access_token']);
-        $this->assertEquals('Bearer', $res['token_type']);
+        Event::assertDispatched(UserRegistered::class);
     }
 
-    public function test_login_throws_when_missing_credentials()
+    public function test_logs_in_successfully_without_2fa()
     {
-        $service = new UserService(Mockery::mock(UserRepositoryInterface::class), Mockery::mock(WalletService::class));
+        $credentials = ['email' => 'TEST@Example.com', 'password' => 'secret'];
 
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->id = 10;
+        $user->email = 'test@example.com';
+        $user->password = Hash::make('secret');
+        $user->two_factor_enabled = false;
+
+        $user->shouldReceive('createToken')
+            ->once()
+            ->andReturn((object) ['plainTextToken' => 'token123']);
+
+        $this->userRepo->shouldReceive('findByEmail')
+            ->with($user->email)
+            ->andReturn($user);
+
+        $this->userRepo->shouldReceive('isActive')
+            ->with(10)
+            ->andReturn(true);
+
+        $dto = $this->service->login($credentials);
+
+        $this->assertInstanceOf(LoginDTO::class, $dto);
+        $this->assertEquals('token123', $dto->accessToken);
+
+        Event::assertDispatched(UserLoggedIn::class);
+    }
+
+    public function test_login_fails_if_user_not_found()
+    {
         $this->expectException(AuthenticationException::class);
 
-        $service->login(['email' => 'only-email']);
+        $this->userRepo->shouldReceive('findByEmail')->andReturn(null);
+
+        $this->service->login([
+            'email' => 'x@example.com',
+            'password' => '123',
+        ]);
     }
 
-    public function test_login_throws_on_invalid_credentials()
+    public function test_login_fails_if_wrong_password()
     {
-        $userRepo = Mockery::mock(UserRepositoryInterface::class);
-        $userRepo->shouldReceive('findByEmail')->once()->with('notfound@example.com')->andReturn(null);
-
-        $service = new UserService($userRepo, Mockery::mock(WalletService::class));
-
         $this->expectException(AuthenticationException::class);
 
-        $service->login(['email' => 'notfound@example.com', 'password' => 'x']);
+        $user = new User(['password' => Hash::make('rightpass')]);
+
+        $this->userRepo->shouldReceive('findByEmail')->andReturn($user);
+
+        $this->service->login([
+            'email' => 'x@example.com',
+            'password' => 'wrong',
+        ]);
     }
 
-    public function test_logout_deletes_tokens_and_dispatches_event()
+    public function test_login_fails_if_user_inactive()
     {
-        Event::fake();
+        $this->expectException(AuthenticationException::class);
 
-        $tokens = Mockery::mock();
-        $tokens->shouldReceive('delete')->once();
+        $user = new User(['id' => 1, 'password' => Hash::make('123')]);
 
-        $user = Mockery::mock(User::class);
-        $user->shouldReceive('tokens')->once()->andReturn($tokens);
+        $this->userRepo->shouldReceive('findByEmail')->andReturn($user);
 
-        $service = new UserService(Mockery::mock(UserRepositoryInterface::class), Mockery::mock(WalletService::class));
+        $this->userRepo->shouldReceive('isActive')
+            ->with(1)
+            ->andReturn(false);
 
-        $service->logout($user);
+        $this->service->login([
+            'email' => 'x@example.com',
+            'password' => '123',
+        ]);
+    }
+
+    public function test_login_requires_2fa_if_enabled()
+    {
+        $credentials = ['email' => 'test@example.com', 'password' => 'secret'];
+
+        $user = new User([
+            'id' => 5,
+            'password' => Hash::make('secret'),
+            'two_factor_enabled' => true,
+        ]);
+
+        $this->userRepo->shouldReceive('findByEmail')->andReturn($user);
+        $this->userRepo->shouldReceive('isActive')->andReturn(true);
+
+        $this->otpCodeService->shouldReceive('generateAndSendOtp')
+            ->once()
+            ->with(5, 'email');
+
+        $dto = $this->service->login($credentials);
+
+        $this->assertTrue($dto->twoFactorRequired);
+        $this->assertNull($dto->accessToken);
+    }
+
+    public function test_verify_two_factor_success()
+    {
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->id = 20;
+
+        $user->shouldReceive('createToken')
+            ->once()
+            ->andReturn((object)['plainTextToken' => 'abc123']);
+
+        $this->userRepo->shouldReceive('findById')->with(20)->andReturn($user);
+
+        $this->otpCodeService->shouldReceive('verifyOtp')
+            ->with(20, 'email', '111111')
+            ->andReturn(true);
+
+        $dto = $this->service->verifyTwoFactor(20, '111111');
+
+        $this->assertEquals('abc123', $dto->accessToken);
+
+        Event::assertDispatched(UserLoggedIn::class);
+    }
+
+    public function test_verify_two_factor_fails_on_wrong_otp()
+    {
+        $this->expectException(AuthenticationException::class);
+
+        $user = new User(['id' => 30]);
+
+        $this->userRepo->shouldReceive('findById')->with(30)->andReturn($user);
+
+        $this->otpCodeService->shouldReceive('verifyOtp')
+            ->with(30, 'email', '123456')
+            ->andReturn(false);
+
+        $this->service->verifyTwoFactor(30, '123456');
+    }
+
+    public function test_logout_deletes_token_and_fires_event()
+    {
+        $token = Mockery::mock();
+        $token->shouldReceive('delete')->once();
+
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('currentAccessToken')->andReturn($token);
+
+        $this->service->logout($user);
 
         Event::assertDispatched(UserLoggedOut::class);
     }
