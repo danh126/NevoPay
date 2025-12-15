@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
 
             // Loại hành động
-            $table->enum('action', ['create', 'update', 'delete', 'login', 'logout', 'system']);
+            $table->string('action', 100);
 
             // Bảng và bản ghi nào bị ảnh hưởng
             $table->string('auditable_type'); // App\Models\Transaction, App\Models\Wallet, ...

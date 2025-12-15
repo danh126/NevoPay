@@ -9,11 +9,20 @@ use App\Events\Transaction\TransactionCompleted;
 use App\Events\Transaction\TransactionCreated;
 use App\Events\Transaction\TransactionFailed;
 use App\Services\AuditLogService;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class RecordAuditLog
+class RecordAuditLog implements ShouldQueue 
 {
-    public function __construct(protected AuditLogService $auditLogService) {}
+    use InteractsWithQueue;
 
+    public int $tries = 3;
+    public int $backoff = 5;
+
+    public function __construct(
+        protected AuditLogService $audit
+    ){}
+    
     public function handle(object $event): void
     {
         match (true) {
@@ -27,7 +36,9 @@ class RecordAuditLog
             $event instanceof UserLoggedIn         => $this->logUserLoggedIn($event),
             $event instanceof UserLoggedOut        => $this->logUserLoggedOut($event),
 
-            default => null,
+            default => logger('Audit skipped: unsupported event', [
+                'event' => get_class($event),
+            ]),
         };
     }
 
@@ -38,7 +49,7 @@ class RecordAuditLog
     {
         $transaction = $event->transaction;
 
-        $this->auditLogService->log(
+        $this->audit->log(
             action: 'transaction.created',
             model: $transaction,
             oldValues: null,
@@ -51,7 +62,7 @@ class RecordAuditLog
     {
         $transaction = $event->transaction;
 
-        $this->auditLogService->log(
+        $this->audit->log(
             action: 'transaction.completed',
             model: $transaction,
             oldValues: $event->oldValues ?? null,
@@ -64,7 +75,7 @@ class RecordAuditLog
     {
         $transaction = $event->transaction;
 
-        $this->auditLogService->log(
+        $this->audit->log(
             action: 'transaction.failed',
             model: $transaction,
             oldValues: $transaction->toArray(),
@@ -80,7 +91,8 @@ class RecordAuditLog
     {
         $user = $event->user;
 
-        $this->auditLogService->log(
+        $this->audit->log(
+            userId: $user->id,
             action: 'user.registered',
             model: $user,
             oldValues: null,
@@ -93,7 +105,8 @@ class RecordAuditLog
     {
         $user = $event->user;
 
-        $this->auditLogService->log(
+        $this->audit->log(
+            userId: $user->id,
             action: 'user.logged_in',
             model: $user,
             oldValues: null,
@@ -106,12 +119,21 @@ class RecordAuditLog
     {
         $user = $event->user;
 
-        $this->auditLogService->log(
+        $this->audit->log(
+            userId: $user->id,
             action: 'user.logged_out',
             model: $user,
             oldValues: null,
             newValues: null,
             description: 'User logged out'
         );
+    }
+
+    // Override failed method to log exceptions
+    public function failed(\Throwable $e): void
+    {
+        logger()->error('Audit log failed', [
+            'exception' => $e->getMessage(),
+        ]);
     }
 }
