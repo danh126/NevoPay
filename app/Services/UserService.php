@@ -11,6 +11,7 @@ use App\Repositories\Interfaces\UserRepositoryInterface;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserService
 {
@@ -96,10 +97,10 @@ class UserService
         );
     }
 
-    public function logout(User $user): void
+    public function logout(User $user, ?PersonalAccessToken $token): void
     {
-        $user->currentAccessToken()?->delete();
-
+        $token?->delete();
+        
         event(new UserLoggedOut($user));
     }
 

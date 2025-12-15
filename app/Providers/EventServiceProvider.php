@@ -12,7 +12,7 @@ use App\Listeners\Audit\RecordAuditLog;
 use App\Listeners\Transaction\HandleCompletedTransaction;
 use App\Listeners\Transaction\HandleFailedTransaction;
 use App\Listeners\Transaction\ProcessTransaction;
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
 {
