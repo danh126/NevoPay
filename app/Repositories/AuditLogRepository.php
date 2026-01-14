@@ -6,7 +6,6 @@ use App\Models\AuditLog;
 use App\Repositories\Interfaces\AuditLogRepositoryInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
 
 class AuditLogRepository implements AuditLogRepositoryInterface
 {
@@ -31,15 +30,7 @@ class AuditLogRepository implements AuditLogRepositoryInterface
      */
     public function create(array $data): AuditLog
     {
-        try {
-            return AuditLog::create($data);
-        } catch (\Exception $e) {
-            Log::error('AuditLogRepository::create failed', [
-                'message' => $e->getMessage(),
-                'data' => $data,
-            ]);
-            throw $e;
-        }
+        return AuditLog::create($data);
     }
 
     /** 
