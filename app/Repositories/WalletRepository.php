@@ -6,7 +6,6 @@ use App\Models\Wallet;
 use App\Repositories\Interfaces\WalletRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class WalletRepository implements WalletRepositoryInterface
@@ -56,15 +55,7 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function create(array $data): ?Wallet
     {
-        try {
-            return Wallet::create($data);
-        } catch (\Exception $e) {
-            Log::error('WalletRepository::create failed', [
-                'message' => $e->getMessage(),
-                'data' => $data,
-            ]);
-            throw $e;
-        }
+        return Wallet::create($data);
     }
 
     /**
@@ -72,22 +63,14 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function update(int $id, array $data): ?Wallet
     {
-        try {
-            $wallet = $this->find($id);
-            if (!$wallet) {
-                throw new ModelNotFoundException("Wallet not found with ID {$id}");
-            }
+        $wallet = $this->find($id);
 
-            $wallet->update($data);
-            return $wallet->fresh();
-        } catch (\Exception $e) {
-            Log::error('WalletRepository::update failed', [
-                'message' => $e->getMessage(),
-                'wallet_id' => $id,
-                'data' => $data,
-            ]);
-            throw $e;
+        if (!$wallet) {
+            throw new ModelNotFoundException("Wallet not found with ID {$id}");
         }
+
+        $wallet->update($data);
+        return $wallet->fresh();
     }
 
     /**
@@ -95,20 +78,10 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function updateBalance(int $id, float $amount): Wallet
     {
-        try {
-            $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
-            $wallet->increment('balance', $amount);
+        $wallet = Wallet::where('id', $id)->lockForUpdate()->firstOrFail();
+        $wallet->increment('balance', $amount);
 
-            return $wallet->fresh();
-        } catch (\Exception $e) {
-            Log::error('WalletRepository::updateBalance failed', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'wallet_id' => $id,
-                'amount' => $amount,
-            ]);
-            throw $e;
-        }
+        return $wallet->fresh();
     }
     
     /**
@@ -131,20 +104,13 @@ class WalletRepository implements WalletRepositoryInterface
      */
     public function delete(int $id): bool
     {
-        try {
-            $wallet = $this->find($id);
-            if (!$wallet) {
-                throw new ModelNotFoundException("Wallet not found with ID {$id}");
-            }
-
-            return (bool) $wallet->delete();
-        } catch (\Exception $e) {
-            Log::error('WalletRepository::delete failed', [
-                'message' => $e->getMessage(),
-                'wallet_id' => $id,
-            ]);
-            throw $e;
+        $wallet = $this->find($id);
+        
+        if (!$wallet) {
+            throw new ModelNotFoundException("Wallet not found with ID {$id}");
         }
+
+        return (bool) $wallet->delete();
     }
 
     /**
